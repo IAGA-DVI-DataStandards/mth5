@@ -9,6 +9,9 @@ permissions:
   contents: write
   id-token: write
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
   publish:
     # Run only when push commit message contains release labels
@@ -20,12 +23,12 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.2
         with:
           fetch-depth: 0
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6.2.0
         with:
           python-version: "3.13"
 
@@ -37,14 +40,6 @@ jobs:
         run: |
           VERSION=$(bump-my-version show current_version)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v${{ steps.version.outputs.version }}
-          name: v${{ steps.version.outputs.version }}
-          body_path: CHANGELOG.md
-          generate_release_notes: false
 
       - name: Build package
         run: python -m build
@@ -58,7 +53,17 @@ jobs:
           attestations: false
           
       - name: Publish to PyPI
+        id: pypi
         if: steps.test-pypi.outcome == 'success'
         uses: pypa/gh-action-pypi-publish@v1.13.0
         with:
           skip-existing: true
+
+      - name: Create GitHub Release
+        if: steps.pypi.outcome == 'success'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: v${{ steps.version.outputs.version }}
+          body_path: CHANGELOG.md
+          generate_release_notes: false
