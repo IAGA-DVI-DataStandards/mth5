@@ -1,59 +1,93 @@
 name: Publish to PyPI
 
 on:
-  pull_request_target:
-    types: [closed]
+  push:
     branches:
       - master
 
 permissions:
   contents: write
   id-token: write
+  pull-requests: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 jobs:
   publish:
-    # Run only after PR is merged with release labels
-    if: |
-      github.event.pull_request.merged == true && (
-        contains(github.event.pull_request.labels.*.name, 'release:major') ||
-        contains(github.event.pull_request.labels.*.name, 'release:minor') ||
-        contains(github.event.pull_request.labels.*.name, 'release:patch')
-      )
     runs-on: ubuntu-latest
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.2
         with:
           fetch-depth: 0
 
+      - name: Check merged PR release label
+        id: release_label_check
+        uses: actions/github-script@v9.0.0
+        with:
+          script: |
+            const releaseLabels = ['release:major', 'release:minor', 'release:patch'];
+            const { owner, repo } = context.repo;
+            const commitSha = context.sha;
+
+            const prs = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+              owner,
+              repo,
+              commit_sha: commitSha,
+            });
+
+            const mergedPr = prs.data.find((pr) => pr.merged_at && pr.base?.ref === 'master');
+
+            if (!mergedPr) {
+              core.notice(`No merged PR associated with commit ${commitSha}. Skipping publish.`);
+              core.setOutput('should_publish', 'false');
+              return;
+            }
+
+            const labelNames = (mergedPr.labels || [])
+              .map((label) => label?.name)
+              .filter(Boolean);
+            const matchedLabel = releaseLabels.find((label) => labelNames.includes(label));
+
+            if (!matchedLabel) {
+              core.notice(
+                `Merged PR #${mergedPr.number} does not include a release label (${releaseLabels.join(', ')}). Skipping publish.`
+              );
+              core.setOutput('should_publish', 'false');
+              return;
+            }
+
+            core.info(`Merged PR #${mergedPr.number} has label ${matchedLabel}. Publishing enabled.`);
+            core.setOutput('should_publish', 'true');
+            core.setOutput('release_label', matchedLabel);
+            core.setOutput('pr_number', String(mergedPr.number));
+
       - name: Set up Python
-        uses: actions/setup-python@v5
+        if: steps.release_label_check.outputs.should_publish == 'true'
+        uses: actions/setup-python@v6.2.0
         with:
           python-version: "3.13"
 
       - name: Install tools
+        if: steps.release_label_check.outputs.should_publish == 'true'
         run: pip install bump-my-version build
 
       - name: Extract version
         id: version
+        if: steps.release_label_check.outputs.should_publish == 'true'
         run: |
           VERSION=$(bump-my-version show current_version)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: v${{ steps.version.outputs.version }}
-          name: v${{ steps.version.outputs.version }}
-          body_path: CHANGELOG.md
-          generate_release_notes: false
-
       - name: Build package
+        if: steps.release_label_check.outputs.should_publish == 'true'
         run: python -m build
 
       - name: Publish to TestPyPI
         id: test-pypi
+        if: steps.release_label_check.outputs.should_publish == 'true'
         uses: pypa/gh-action-pypi-publish@v1.13.0
         with:
           repository-url: https://test.pypi.org/legacy/
@@ -61,7 +95,17 @@ jobs:
           attestations: false
           
       - name: Publish to PyPI
-        if: steps.test-pypi.outcome == 'success'
+        id: pypi
+        if: steps.release_label_check.outputs.should_publish == 'true' && steps.test-pypi.outcome == 'success'
         uses: pypa/gh-action-pypi-publish@v1.13.0
         with:
           skip-existing: true
+
+      - name: Create GitHub Release
+        if: steps.release_label_check.outputs.should_publish == 'true' && steps.pypi.outcome == 'success'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: v${{ steps.version.outputs.version }}
+          body_path: CHANGELOG.md
+          generate_release_notes: false
