@@ -43,7 +43,7 @@ jobs:
       - name: Install git-cliff
         uses: kenji-miyake/setup-git-cliff@v2
         with:
-          git-cliff-version: "2.12.0"
+          git-cliff-version: "2.13.0"
 
       - name: Set up Git user
         run: |
