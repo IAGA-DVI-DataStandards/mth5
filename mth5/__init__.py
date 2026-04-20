@@ -21,7 +21,7 @@ import mt_timeseries.scipy_filters
 
 __author__ = """Jared Peacock"""
 __email__ = "jpeacock@usgs.gov"
-__version__ = "0.6.5"
+__version__ = "0.6.6"
 
 
 # =============================================================================

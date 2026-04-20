@@ -14,7 +14,7 @@ MTH5 uses [h5py](https://www.h5py.org/) to interact with HDF5, [xarray](http://x
 
 This project is developed in cooperation with the Incorporated Research Institutions for Seismology, the U.S. Geological Survey, and other collaborators. Facilities of the IRIS Consortium are supported by the National Science Foundation's Seismological Facilities for the Advancement of Geoscience Award under Cooperative Support Agreement EAR-1851048. USGS support is provided in part through the Community for Data Integration and IMAGe through the Minerals Resources Program.
 
-- Version: 0.6.5
+- Version: 0.6.6
 - License: MIT
 - Python: 3.10+
 - API Documentation: https://mth5.readthedocs.io/
