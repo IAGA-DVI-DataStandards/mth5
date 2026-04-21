@@ -131,14 +131,14 @@ class TestLEMI120CoilResponse(unittest.TestCase):
 
     def test_coil_response_creation(self):
         """Test that LEMI120CoilResponse class can be instantiated"""
-        from mth5.io.lemi.lemi423 import LEMI120CoilResponse
+        from mt_io.lemi.lemi423 import LEMI120CoilResponse
 
         lemi120 = LEMI120CoilResponse()
         self.assertIsNotNone(lemi120)
 
     def test_coil_response_data(self):
         """Test that coil response has correct calibration data"""
-        from mth5.io.lemi.lemi423 import LEMI120CoilResponse
+        from mt_io.lemi.lemi423 import LEMI120CoilResponse
 
         lemi120 = LEMI120CoilResponse()
 
@@ -152,7 +152,7 @@ class TestLEMI120CoilResponse(unittest.TestCase):
 
     def test_get_coil_response_filter(self):
         """Test that get_coil_response returns a proper filter object"""
-        from mth5.io.lemi.lemi423 import LEMI120CoilResponse
+        from mt_io.lemi.lemi423 import LEMI120CoilResponse
 
         lemi120 = LEMI120CoilResponse()
         filter_obj = lemi120.get_coil_response()
@@ -176,7 +176,7 @@ class TestLEMI120CoilResponse(unittest.TestCase):
 
     def test_coil_response_with_serial_number(self):
         """Test that coil response can use serial number in name"""
-        from mth5.io.lemi.lemi423 import LEMI120CoilResponse
+        from mt_io.lemi.lemi423 import LEMI120CoilResponse
 
         lemi120 = LEMI120CoilResponse()
         filter_obj = lemi120.get_coil_response(coil_number="12345")

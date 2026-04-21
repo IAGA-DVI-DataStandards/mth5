@@ -16,9 +16,11 @@ Created on Thu Nov 7 15:35:00 2025
 # =============================================================================
 from pathlib import Path
 
-from mth5.mth5 import MTH5
-from mth5.io.uoa import read_uoa, read_orange
+from mt_io.uoa import read_orange, read_uoa
+
 from mth5.clients.base import ClientBase
+from mth5.mth5 import MTH5
+
 
 # =============================================================================
 
@@ -70,18 +72,17 @@ class UoAClient(ClientBase):
         save_path=None,
         instrument_type="pr624",
         mth5_filename="from_uoa.h5",
-        **kwargs
+        **kwargs,
     ):
         super().__init__(
-            data_path,
-            save_path=save_path,
-            mth5_filename=mth5_filename,
-            **kwargs
+            data_path, save_path=save_path, mth5_filename=mth5_filename, **kwargs
         )
 
         self.instrument_type = instrument_type.lower()
-        if self.instrument_type not in ['pr624', 'orange']:
-            raise ValueError(f"instrument_type must be 'pr624' or 'orange', got '{instrument_type}'")
+        if self.instrument_type not in ["pr624", "orange"]:
+            raise ValueError(
+                f"instrument_type must be 'pr624' or 'orange', got '{instrument_type}'"
+            )
 
     def make_mth5_from_uoa(self, survey_id, station_id, run_id="001", **kwargs):
         """
@@ -144,7 +145,7 @@ class UoAClient(ClientBase):
         """
 
         # Read data using appropriate reader
-        if self.instrument_type == 'pr624':
+        if self.instrument_type == "pr624":
             run_ts = read_uoa(self.data_path, station_id=station_id, **kwargs)
         else:  # orange
             # For Orange Box, handle both single file and directory
