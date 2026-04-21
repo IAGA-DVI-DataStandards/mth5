@@ -238,18 +238,11 @@ class TestKernelDataset:
         """Test cloning operations."""
         # Test clone_dataframe
         cloned_df = kernel_dataset.clone_dataframe()
-        cloned_df.fillna(0, inplace=True)
-        kernel_dataset.df.fillna(0, inplace=True)
-        assert (cloned_df == kernel_dataset.df).all().all()
-
-        # Reset for clone test
-        kernel_dataset.df.fillna(float("nan"), inplace=True)
+        pd.testing.assert_frame_equal(cloned_df, kernel_dataset.df)
 
         # Test clone
         clone = kernel_dataset.clone()
-        clone.df.fillna(0, inplace=True)
-        kernel_dataset.df.fillna(0, inplace=True)
-        assert (clone.df == kernel_dataset.df).all().all()
+        pd.testing.assert_frame_equal(clone.df, kernel_dataset.df)
 
     def test_mini_summary(self, kernel_dataset):
         """Test mini summary functionality."""
@@ -552,9 +545,11 @@ def test_large_dataset_performance(custom_run_summary_data):
     assert end - start < 10.0  # Should complete in under 10 seconds
     assert kd._has_df()
 
+
 # =============================================================================
 # Integration Test for initialize_dataframe_for_processing
 # =============================================================================
+
 
 def test_initialize_dataframe_for_processing(mth5_path):
     """Test KernelDataset.initialize_dataframe_for_processing end-to-end."""
@@ -581,8 +576,12 @@ def test_initialize_dataframe_for_processing(mth5_path):
     # Check that run_hdf5_reference and run_dataarray columns are populated (not all None)
     assert "run_hdf5_reference" in kd.df.columns
     assert "run_dataarray" in kd.df.columns
-    assert kd.df["run_hdf5_reference"].notnull().any(), "run_hdf5_reference should not be all None"
-    assert kd.df["run_dataarray"].notnull().any(), "run_dataarray should not be all None"
+    assert (
+        kd.df["run_hdf5_reference"].notnull().any()
+    ), "run_hdf5_reference should not be all None"
+    assert (
+        kd.df["run_dataarray"].notnull().any()
+    ), "run_dataarray should not be all None"
 
 
 if __name__ == "__main__":

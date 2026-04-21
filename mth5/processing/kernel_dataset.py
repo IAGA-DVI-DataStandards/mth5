@@ -66,13 +66,13 @@ from pathlib import Path
 from typing import Any
 
 import mt_metadata.timeseries
+import mt_timeseries.run_ts
 import pandas as pd
 from loguru import logger
 from mt_metadata.common.list_dict import ListDict
 from mt_metadata.timeseries import Survey
 from mt_metadata.transfer_functions.tf import Station
 
-import mth5.timeseries.run_ts
 from mth5.mth5 import MTH5
 from mth5.processing import KERNEL_DATASET_DTYPE, MINI_SUMMARY_COLUMNS
 from mth5.processing.run_summary import RunSummary
@@ -1195,7 +1195,7 @@ class KernelDataset:
 
     # this should be deprecated in the future in favor of usin get_metadata_from_df
     def update_survey_metadata(
-        self, i: int, row: pd.Series, run_ts: mth5.timeseries.run_ts.RunTS
+        self, i: int, row: pd.Series, run_ts: mt_timeseries.run_ts.RunTS
     ) -> None:
         """Wrangle survey_metadata into kernel_dataset.
 
@@ -1211,7 +1211,7 @@ class KernelDataset:
         :param row:
         :type row: pd.Series
         :param run_ts: Mth5 object having the survey_metadata.
-        :type run_ts: mth5.timeseries.run_ts.RunTS
+        :type run_ts: mt_timeseries.run_ts.RunTS
         :rtype: None
         """
         survey_id = run_ts.survey_metadata.id
@@ -1328,13 +1328,13 @@ class KernelDataset:
             raise ValueError("mth5 objects have not been initialized yet.")
 
         if self._has_df():
-            self._df.loc[self._df.station == self.local_station_id, "mth5_obj"] = (
-                self.local_mth5_obj
-            )
+            self._df.loc[
+                self._df.station == self.local_station_id, "mth5_obj"
+            ] = self.local_mth5_obj
             if self.remote_station_id is not None:
-                self._df.loc[self._df.station == self.remote_station_id, "mth5_obj"] = (
-                    self.remote_mth5_obj
-                )
+                self._df.loc[
+                    self._df.station == self.remote_station_id, "mth5_obj"
+                ] = self.remote_mth5_obj
 
     def close_mth5s(self) -> None:
         """Loop over all unique mth5_objs in dataset df and make sure they are closed.+."""

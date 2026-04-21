@@ -9,10 +9,10 @@ Created on Wed Nov 27 11:23:50 2024
 # Imports
 # =============================================================================
 import pandas as pd
+from mt_io.metronix import MetronixCollection
 
 from mth5 import read_file
 from mth5.clients.base import ClientBase
-from mth5.io.metronix import MetronixCollection
 from mth5.mth5 import MTH5
 
 

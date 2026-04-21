@@ -2,10 +2,10 @@ import pathlib
 
 import pandas
 from loguru import logger
+from mt_timeseries import ChannelTS, RunTS
 
 from mth5.data.make_mth5_from_asc import _add_survey
 from mth5.mth5 import MTH5
-from mth5.timeseries import ChannelTS, RunTS
 from mth5.utils.helpers import add_filters, station_in_mth5, survey_in_mth5
 
 

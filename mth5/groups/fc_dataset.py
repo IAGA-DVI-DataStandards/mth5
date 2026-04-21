@@ -18,9 +18,9 @@ import numpy as np
 import xarray as xr
 from loguru import logger
 from mt_metadata.processing.fourier_coefficients import FCChannel
+from mt_timeseries.ts_helpers import make_dt_coordinates
 
 from mth5.helpers import add_attributes_to_metadata_class_pydantic, to_numpy_type
-from mth5.timeseries.ts_helpers import make_dt_coordinates
 from mth5.utils.exceptions import MTH5Error
 
 

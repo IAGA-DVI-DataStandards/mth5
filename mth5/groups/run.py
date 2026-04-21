@@ -17,6 +17,7 @@ import h5py
 import numpy as np
 import pandas as pd
 from mt_metadata import timeseries as metadata
+from mt_timeseries import ChannelTS, RunTS
 
 from mth5 import CHUNK_SIZE
 from mth5.groups import (
@@ -27,7 +28,6 @@ from mth5.groups import (
     MagneticDataset,
 )
 from mth5.helpers import read_attrs_to_dict, to_numpy_type, validate_name
-from mth5.timeseries import ChannelTS, RunTS
 from mth5.utils.exceptions import MTH5Error
 
 
@@ -1034,7 +1034,7 @@ class RunGroup(BaseGroup):
 
         Examples
         --------
-        >>> from mth5.timeseries import RunTS
+        >>> from mt_timeseries import RunTS
         >>> run = mth5_obj.get_run("MT001", "MT001a")
         >>> runts = RunTS.from_file("timeseries_data.txt")
         >>> channels = run.from_runts(runts)
@@ -1043,7 +1043,7 @@ class RunGroup(BaseGroup):
         """
 
         if not isinstance(run_ts_obj, RunTS):
-            msg = f"Input must be a mth5.timeseries.RunTS object not {type(run_ts_obj)}"
+            msg = f"Input must be a mt_timeseries.RunTS object not {type(run_ts_obj)}"
             self.logger.error(msg)
             raise MTH5Error(msg)
         self._metadata.update(run_ts_obj.run_metadata)
@@ -1110,7 +1110,7 @@ class RunGroup(BaseGroup):
 
         Examples
         --------
-        >>> from mth5.timeseries import ChannelTS
+        >>> from mt_timeseries import ChannelTS
         >>> run = mth5_obj.get_run("MT001", "MT001a")
         >>> channel = ChannelTS.from_file("ex_timeseries.txt")
         >>> ex = run.from_channel_ts(channel)
@@ -1119,7 +1119,7 @@ class RunGroup(BaseGroup):
         """
 
         if not isinstance(channel_ts_obj, ChannelTS):
-            msg = f"Input must be a mth5.timeseries.ChannelTS object not {type(channel_ts_obj)}"
+            msg = f"Input must be a mt_timeseries.ChannelTS object not {type(channel_ts_obj)}"
             self.logger.error(msg)
             raise MTH5Error(msg)
         ## Need to add in the filters

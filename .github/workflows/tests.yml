@@ -23,14 +23,18 @@ jobs:
         python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
     defaults:
       run:
-        shell: bash -el {0}
+        shell: bash -e {0}
 
     steps:
     - uses: actions/checkout@v4
-    - uses: conda-incubator/setup-miniconda@v3
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
       with:
-        auto-update-conda: true
         python-version: ${{ matrix.python-version }}
+
+    - name: Set up uv
+      uses: astral-sh/setup-uv@v5
 
     - name: Cache MTH5 Test Fixtures
       uses: actions/cache@v3
@@ -46,18 +50,20 @@ jobs:
     - name: Install Env
       run: |
         python --version
-        conda install pytest
-        conda install pytest-cov
-        conda install pytest-subtests
-        conda install pytest-xdist[psutil]
-        conda install pytest-benchmark
-        conda install setuptools
-        pip install mt_metadata[obspy]
-        pip install git+https://github.com/kujaku11/mth5_test_data.git
+        uv pip install --system \
+          pytest \
+          pytest-cov \
+          pytest-subtests \
+          "pytest-xdist[psutil]" \
+          pytest-benchmark \
+          setuptools \
+          "mt_metadata[obspy]" \
+          "git+https://github.com/kujaku11/mth5_test_data.git"
+
     - name: Install Our Package
       run: |
-        pip install -e .
-        conda list
+        uv pip install --system -e .
+        pip list
 
     #- name: Install Jupyter and dependencies
     #  run: |

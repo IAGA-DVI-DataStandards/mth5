@@ -52,6 +52,15 @@ def covariance_xr(
 
     channels = list(X.coords["variable"].values)
 
+    # Guard against divide-by-zero when fewer than 2 time samples are present
+    if X.shape[0] < 2:
+        nan_matrix = np.full((len(channels), len(channels)), np.nan)
+        return xr.DataArray(
+            nan_matrix,
+            dims=["channel_1", "channel_2"],
+            coords={"channel_1": channels, "channel_2": channels},
+        )
+
     cov_result = np.cov(X.values, rowvar=rowvar, aweights=aweights, bias=bias)
 
     # Handle scalar result for single variable

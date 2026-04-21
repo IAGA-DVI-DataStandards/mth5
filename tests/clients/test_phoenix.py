@@ -17,10 +17,10 @@ from unittest.mock import MagicMock, Mock, patch
 # Imports
 # =============================================================================
 import pytest
+from mt_io.phoenix import PhoenixCollection
+from mt_io.phoenix.readers.calibrations import PhoenixCalibration
 
 from mth5.clients.phoenix import PhoenixClient
-from mth5.io.phoenix import PhoenixCollection
-from mth5.io.phoenix.readers.calibrations import PhoenixCalibration
 
 
 # =============================================================================
@@ -440,10 +440,11 @@ class TestPhoenixClientSensorCalibration:
         basic_phoenix_client.sensor_calibration_dict = "/non/existent/path"
         assert basic_phoenix_client.sensor_calibration_dict == {}
 
-    def test_sensor_calibration_dict_none_raises_error(self, basic_phoenix_client):
-        """Test that None calibration path raises ValueError."""
-        with pytest.raises(ValueError, match="calibration_path cannot be None"):
-            basic_phoenix_client.sensor_calibration_dict = None
+    # this test should be depricated because the setter should handle None by creating an empty dict, not raising an error
+    # def test_sensor_calibration_dict_none_raises_error(self, basic_phoenix_client):
+    #     """Test that None calibration path raises ValueError."""
+    #     with pytest.raises(ValueError, match="calibration_path cannot be None"):
+    #         basic_phoenix_client.sensor_calibration_dict = None
 
 
 # =============================================================================
@@ -625,9 +626,10 @@ class TestPhoenixClientMTH5Creation:
         # Verify coil calibration was applied
         # The code calls add_filter() method and appends to filters_list
         mock_ch_ts.channel_metadata.add_filter.assert_called_once()
-        mock_ch_ts.channel_response.filters_list.append.assert_called_once_with(
-            mock_cal.h1
-        )
+        # no longer called because the setter for sensor_calibration_dict should handle this now, not make_mth5_from_phoenix
+        # mock_ch_ts.channel_response.filters_list.append.assert_called_once_with(
+        #     mock_cal.h1
+        # )
 
     @patch("mth5.clients.phoenix.read_file")
     @patch("mth5.clients.phoenix.MTH5")
@@ -667,6 +669,67 @@ class TestPhoenixClientMTH5Creation:
         result = basic_phoenix_client.make_mth5_from_phoenix()
 
         # Should still return save path even with errors
+        assert result == basic_phoenix_client.save_path
+
+    @patch("mth5.clients.phoenix.read_file")
+    @patch("mth5.clients.phoenix.MTH5")
+    def test_make_mth5_sets_all_filters_applied_true(
+        self,
+        mock_mth5_class,
+        mock_read_file,
+        basic_phoenix_client,
+        mock_phoenix_collection,
+    ):
+        """Test that all filters in channel_metadata.filters have applied=True."""
+        # Setup mocks
+        mock_mth5_instance = MagicMock()
+        mock_mth5_class.return_value.__enter__.return_value = mock_mth5_instance
+
+        mock_survey_group = MagicMock()
+        mock_mth5_instance.add_survey.return_value = mock_survey_group
+
+        mock_station_group = MagicMock()
+        mock_survey_group.stations_group.add_station.return_value = mock_station_group
+
+        mock_run_group = MagicMock()
+        mock_station_group.add_run.return_value = mock_run_group
+
+        # Setup channel with filters that have applied=False
+        mock_filter1 = MagicMock()
+        mock_filter1.applied = False
+        mock_filter1.name = "filter1"
+
+        mock_filter2 = MagicMock()
+        mock_filter2.applied = False
+        mock_filter2.name = "filter2"
+
+        mock_filter3 = MagicMock()
+        mock_filter3.applied = True  # One already True
+        mock_filter3.name = "filter3"
+
+        mock_ch_ts = MagicMock()
+        mock_ch_ts.component = "hx"
+        mock_ch_ts.channel_metadata.sensor.id = "unknown"
+        mock_ch_ts.channel_metadata.filters = [mock_filter1, mock_filter2, mock_filter3]
+        mock_read_file.return_value = mock_ch_ts
+
+        # Setup required receiver calibration for the instrument
+        basic_phoenix_client.receiver_calibration_dict = {
+            "RX001": "/path/to/rx001.json"
+        }
+
+        # Replace collection with mock
+        basic_phoenix_client.collection = mock_phoenix_collection
+
+        # Test method
+        result = basic_phoenix_client.make_mth5_from_phoenix()
+
+        # Verify all filters now have applied=True
+        for filter_obj in mock_ch_ts.channel_metadata.filters:
+            assert (
+                filter_obj.applied is True
+            ), f"Filter {filter_obj.name} should have applied=True"
+
         assert result == basic_phoenix_client.save_path
 
 

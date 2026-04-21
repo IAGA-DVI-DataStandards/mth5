@@ -9,11 +9,11 @@ import xarray as xr
 import h5py
 from loguru import logger
 
-from mth5.io.reader import read_file
-import mth5.timeseries.scipy_filters
+from mt_io.reader import read_file
+import mt_timeseries.scipy_filters
 
 # # Register xarray accessors
-# import mth5.timeseries.channel_dataset_accessor
+# import mt_timeseries.channel_dataset_accessor
 
 # =============================================================================
 # Package Variables
@@ -21,7 +21,7 @@ import mth5.timeseries.scipy_filters
 
 __author__ = """Jared Peacock"""
 __email__ = "jpeacock@usgs.gov"
-__version__ = "0.6.4"
+__version__ = "0.6.6"
 
 
 # =============================================================================

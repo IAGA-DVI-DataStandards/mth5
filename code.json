@@ -10,13 +10,13 @@
       "licenses": [
         {
           "name": "MIT",
-          "URL": "https://code.usgs.gov/gmeg/mth5/-/raw/v0.6.4/LICENSE.md"
+          "URL": "https://code.usgs.gov/gmeg/mth5/-/raw/v0.6.6/LICENSE.md"
         }
       ]
     },
     "homepageURL": "https://code.usgs.gov/gmeg/mth5",
-    "downloadURL": "https://code.usgs.gov/gmeg/mth5/-/archive/v0.6.4/mth5-v0.6.4.zip",
-    "disclaimerURL": "https://code.usgs.gov/gmeg/mth5/-/raw/v0.6.4/DISCLAIMER.md",
+    "downloadURL": "https://code.usgs.gov/gmeg/mth5/-/archive/v0.6.6/mth5-v0.6.6.zip",
+    "disclaimerURL": "https://code.usgs.gov/gmeg/mth5/-/raw/v0.6.6/DISCLAIMER.md",
     "repositoryURL": "https://code.usgs.gov/gmeg/mth5.git",
     "tags": [
       "magnetotellurics",

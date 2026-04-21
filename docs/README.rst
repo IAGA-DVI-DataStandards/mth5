@@ -28,7 +28,7 @@ MTH5 uses `h5py <https://www.h5py.org/>`_ to interact with the HDF5 file, `xarra
 
 This project is in cooperation with the Incorporated Research Institutes of Seismology, the U.S. Geological Survey, and other collaborators.  Facilities of the IRIS Consortium are supported by the National Science Foundation’s Seismological Facilities for the Advancement of Geoscience (SAGE) Award under Cooperative Support Agreement EAR-1851048.  USGS is partially funded through the Community for Data Integration and IMAGe through the Minerals Resources Program.  
 
-* **Version**: 0.6.4
+* **Version**: 0.6.6
 * **Free software**: MIT license
 * **Documentation**: `<https://mth5.readthedocs.io>`_.
 * **Examples**: Click the `Binder` badge above and Jupyter Notebook examples are in **docs/examples/notebooks**

@@ -12,12 +12,12 @@
 # =============================================================================
 from pathlib import Path
 
+from mt_io.phoenix import PhoenixCollection
+from mt_io.phoenix.readers.calibrations import PhoenixCalibration
 from mt_metadata.timeseries import AppliedFilter
 
 from mth5 import read_file
 from mth5.clients.base import ClientBase
-from mth5.io.phoenix import PhoenixCollection
-from mth5.io.phoenix.readers.calibrations import PhoenixCalibration
 from mth5.mth5 import MTH5
 
 
@@ -94,13 +94,15 @@ class PhoenixClient(ClientBase):
             receiver_path = Path(value)
             if receiver_path.is_dir():
                 self._receiver_calibration_dict = {}
-                for fn in list(receiver_path.glob("*.rxcal.json")) + list(
-                    receiver_path.glob("*.rx_cal.json")
+                for fn in list(receiver_path.rglob("*.rxcal.json")) + list(
+                    receiver_path.rglob("*.rx_cal.json")
                 ):
-                    self._receiver_calibration_dict[fn.stem.split("_")[0]] = fn
+                    self._receiver_calibration_dict[
+                        fn.stem.split(".")[0].split("_")[0]
+                    ] = fn
             elif receiver_path.is_file():
                 self._receiver_calibration_dict = {}
-                key = receiver_path.stem.split("_")[0]
+                key = receiver_path.stem.split(".")[0].split("_")[0]
                 self._receiver_calibration_dict[key] = receiver_path
         elif value is None:
             pass
@@ -152,14 +154,14 @@ class PhoenixClient(ClientBase):
             self._sensor_calibration_dict = {}
             cal_path = Path(value)
             if cal_path.is_dir():
-                for fn in cal_path.glob("*scal.json"):
+                for fn in cal_path.rglob("*scal.json"):
                     self._sensor_calibration_dict[
-                        fn.stem.split("_")[0]
+                        fn.stem.split(".")[0].split("_")[0]
                     ] = PhoenixCalibration(fn)
             elif cal_path.is_file():
                 if not cal_path.exists():
                     raise IOError(f"Could not find {cal_path}")
-                key = cal_path.stem.split("_")[0]
+                key = cal_path.stem.split(".")[0].split("_")[0]
                 self._sensor_calibration_dict[key] = PhoenixCalibration(cal_path)
         elif value is None:
             pass
@@ -207,6 +209,18 @@ class PhoenixClient(ClientBase):
                 station_group = survey_group.stations_group.add_station(
                     station_metadata.id, station_metadata=station_metadata
                 )
+                # get receiver calibration file if it exists
+                try:
+                    rxcal_fn = self.receiver_calibration_dict[
+                        collection_metadata.instrument_id
+                    ]
+                except KeyError:
+                    rxcal_fn = None
+                    self.logger.warning(
+                        f"Could not find receiver {collection_metadata.instrument_id} in "
+                        f"receiver calibrations dict {self.receiver_calibration_dict}."
+                    )
+                # loop over runs for the station and add channels to the run group
                 for run_id, run_df in station_dict.items():
                     run_metadata = collection_metadata.run_metadata
                     run_metadata.id = run_id
@@ -221,13 +235,13 @@ class PhoenixClient(ClientBase):
                                 row.fn,
                                 **{
                                     "channel_map": collection_metadata.channel_map,
-                                    "rxcal_fn": self.receiver_calibration_dict[
-                                        collection_metadata.instrument_id
-                                    ],
+                                    "rxcal_fn": rxcal_fn,
                                 },
                             )
-                        except OSError:
-                            print(f"OSError: skipping {row.fn.name} likely too small")
+                        except OSError as error:
+                            self.logger.warning(
+                                f"OSError: skipping {row.fn.name} likely too small.  Error: {error}"
+                            )
                             continue
 
                         if ch_ts.component in ["h1", "h2", "h3"]:
@@ -244,16 +258,31 @@ class PhoenixClient(ClientBase):
                                         break
                                 coil_fap = getattr(pc, key)
 
-                                # add filter
+                                # create applied filter
                                 applied_filter = AppliedFilter(
-                                    name=coil_fap.name, applied=True, stage=1
+                                    name=coil_fap.name,
+                                    applied=True,
+                                    stage=len(ch_ts.channel_metadata.filters),
                                 )
+
+                                # update existing filter if it exists, otherwise add it
                                 ch_ts.channel_metadata.add_filter(applied_filter)
-                                ch_ts.channel_response.filters_list.append(coil_fap)
+
+                                # update existing filter in channel response if it exists, otherwise add it
+                                if coil_fap.name not in ch_ts.channel_response.names:
+                                    ch_ts.channel_response.add_filter(coil_fap)
+                                else:
+                                    ch_ts.channel_response.replace_filter(coil_fap)
+
                             else:
                                 self.logger.warning(
                                     f"Could not find coil {ch_ts.channel_metadata.sensor.id} in sensor calibrations."
                                 )
+
+                        # check to make sure all filters are applied True
+                        # this is a hack for now.
+                        for f in ch_ts.channel_metadata.filters:
+                            f.applied = True
 
                         # add channel to the run group
                         run_group.from_channel_ts(ch_ts)

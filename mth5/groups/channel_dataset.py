@@ -23,6 +23,8 @@ from mt_metadata import timeseries as metadata
 from mt_metadata.base import MetadataBase
 from mt_metadata.common.mttime import MTime
 from mt_metadata.timeseries.filters import ChannelResponse
+from mt_timeseries import ChannelTS
+from mt_timeseries.channel_ts import make_dt_coordinates
 
 from mth5 import CHANNEL_DTYPE
 from mth5.groups import FiltersGroup
@@ -33,8 +35,6 @@ from mth5.helpers import (
     read_attrs_to_dict,
     to_numpy_type,
 )
-from mth5.timeseries import ChannelTS
-from mth5.timeseries.channel_ts import make_dt_coordinates
 from mth5.utils.exceptions import MTH5Error
 
 
@@ -1023,7 +1023,7 @@ class ChannelDataset:
         --------
         >>> ts = channel.to_channel_ts()
         >>> print(f"Type: {type(ts)}")
-        Type: <class 'mth5.timeseries.channel_ts.ChannelTS'>
+        Type: <class 'mt_timeseries.channel_ts.ChannelTS'>
         >>> print(f"Shape: {ts.ts.shape}, Mean: {ts.ts.mean():.2f}")
         Shape: (4096,), Mean: 0.15
 
@@ -1207,7 +1207,7 @@ class ChannelDataset:
         --------
         Replace entire dataset
 
-        >>> from mth5.timeseries import ChannelTS
+        >>> from mt_timeseries import ChannelTS
         >>> import numpy as np
         >>> ts = ChannelTS(
         ...     channel_type='electric',
@@ -1505,7 +1505,7 @@ class ChannelDataset:
         >>> ex = mth5_obj.get_channel('FL001', 'FL001a', 'Ex')
         >>> ex_slice = ex.time_slice(\"2015-01-08T19:49:15\", n_samples=4096)
         >>> print(type(ex_slice))
-        <class 'mth5.timeseries.channel_ts.ChannelTS'>
+        <class 'mt_timeseries.channel_ts.ChannelTS'>
         >>> print(f\"Slice shape: {ex_slice.ts.shape}\")\n        Slice shape: (4096,)
         >>> ex_slice.plot()
 
