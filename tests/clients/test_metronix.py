@@ -22,9 +22,9 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pandas as pd
 import pytest
+from mt_io.metronix import MetronixCollection
 
 from mth5.clients.metronix import MetronixClient
-from mth5.io.metronix import MetronixCollection
 
 
 # =============================================================================

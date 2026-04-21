@@ -12,12 +12,12 @@
 # =============================================================================
 from pathlib import Path
 
+from mt_io.phoenix import PhoenixCollection
+from mt_io.phoenix.readers.calibrations import PhoenixCalibration
 from mt_metadata.timeseries import AppliedFilter
 
 from mth5 import read_file
 from mth5.clients.base import ClientBase
-from mth5.io.phoenix import PhoenixCollection
-from mth5.io.phoenix.readers.calibrations import PhoenixCalibration
 from mth5.mth5 import MTH5
 
 

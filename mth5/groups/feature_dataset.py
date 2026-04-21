@@ -16,9 +16,9 @@ import numpy as np
 import xarray as xr
 from loguru import logger
 from mt_metadata.features import FeatureDecimationChannel
+from mt_timeseries.ts_helpers import make_dt_coordinates
 
 from mth5.helpers import add_attributes_to_metadata_class_pydantic, to_numpy_type
-from mth5.timeseries.ts_helpers import make_dt_coordinates
 from mth5.utils.exceptions import MTH5Error
 
 
@@ -480,7 +480,7 @@ class FeatureChannelDataset:
             Expected dimensions are ['time', 'frequency'].
         sample_rate_decimation_level : int
             Decimation level applied to the original data to produce this
-            feature dataset (integer ≥ 1).
+            feature dataset (integer >= 1).
 
         Notes
         -----

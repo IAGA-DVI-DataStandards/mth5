@@ -44,6 +44,7 @@ from loguru import logger
 from mt_metadata.common.comment import Comment
 from mt_metadata.processing.aurora import ChannelNomenclature
 from mt_metadata.timeseries import AppliedFilter, Electric, Magnetic, Survey
+from mt_timeseries import ChannelTS, RunTS
 
 from mth5.data.paths import SyntheticTestPaths
 from mth5.data.station_config import (
@@ -56,7 +57,6 @@ from mth5.data.station_config import (
     SyntheticStation,
 )
 from mth5.mth5 import MTH5
-from mth5.timeseries import ChannelTS, RunTS
 from mth5.utils.helpers import add_filters
 
 

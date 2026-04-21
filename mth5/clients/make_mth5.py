@@ -445,7 +445,7 @@ class MakeMTH5:
 
         See Also
         --------
-        mth5.io.usgs_geomag.USGSGeomag : USGS geomagnetic data client
+        mt_io.usgs_geomag.USGSGeomag : USGS geomagnetic data client
         """
         maker = cls(**kwargs)
         kw_dict = maker.get_h5_kwargs()
@@ -543,7 +543,7 @@ class MakeMTH5:
 
         See Also
         --------
-        mth5.io.zen.ZenCollection : ZEN data reader
+        mt_io.zen.ZenCollection : ZEN data reader
         """
 
         maker = cls(**kwargs)
@@ -670,8 +670,8 @@ class MakeMTH5:
 
         See Also
         --------
-        mth5.io.phoenix.PhoenixClient : Phoenix data reader
-        mth5.io.phoenix.PhoenixCalibration : Calibration file handler
+        mt_io.phoenix.PhoenixClient : Phoenix data reader
+        mt_io.phoenix.PhoenixCalibration : Calibration file handler
         """
 
         maker = cls(**kwargs)
@@ -777,7 +777,7 @@ class MakeMTH5:
 
         See Also
         --------
-        mth5.io.lemi424.LEMI424Client : LEMI-424 data reader
+        mt_io.lemi424.LEMI424Client : LEMI-424 data reader
         """
         maker = cls(**kwargs)
         kw_dict = maker.get_h5_kwargs()
@@ -891,7 +891,7 @@ class MakeMTH5:
 
         See Also
         --------
-        mth5.io.metronix.MetronixClient : Metronix data reader
+        mt_io.metronix.MetronixClient : Metronix data reader
         """
         maker = cls(**kwargs)
         kw_dict = maker.get_h5_kwargs()

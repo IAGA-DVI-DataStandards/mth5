@@ -19,10 +19,10 @@ import pandas as pd
 import requests
 from mt_metadata.common.mttime import MTime
 from mt_metadata.timeseries import Magnetic, Run, Station, Survey
+from mt_timeseries import ChannelTS, RunTS
 
 from mth5 import __version__ as mth5_version
 from mth5.mth5 import MTH5
-from mth5.timeseries import ChannelTS, RunTS
 
 
 # =============================================================================

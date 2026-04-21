@@ -6,9 +6,10 @@
 # =============================================================================
 from pathlib import Path
 
+from mt_io.nims import NIMSCollection
+
 from mth5 import read_file
 from mth5.clients.base import ClientBase
-from mth5.io.nims import NIMSCollection
 from mth5.mth5 import MTH5
 
 

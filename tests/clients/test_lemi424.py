@@ -17,9 +17,9 @@ from unittest.mock import MagicMock, Mock, patch
 # Imports
 # =============================================================================
 import pytest
+from mt_io.lemi import LEMICollection
 
 from mth5.clients.lemi424 import LEMI424Client
-from mth5.io.lemi import LEMICollection
 
 
 # =============================================================================

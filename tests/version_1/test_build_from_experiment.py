@@ -217,7 +217,12 @@ class TestMTH5ExperimentBuild:
                     ), f"Filter {stored_key}.{k} numerical mismatch"
                 elif isinstance(v1, np.ndarray):
                     if v1.dtype != v2.dtype:
-                        v2_converted = v2.astype(v1.dtype)
+                        if np.issubdtype(
+                            v2.dtype, np.complexfloating
+                        ) and not np.issubdtype(v1.dtype, np.complexfloating):
+                            v2_converted = np.real(v2).astype(v1.dtype)
+                        else:
+                            v2_converted = v2.astype(v1.dtype)
                         assert (
                             v1 == v2_converted
                         ).all(), f"Filter {stored_key}.{k} array mismatch"
@@ -582,7 +587,12 @@ class TestMTH5ToExperiment:
                     ), f"Filter {key}.{k} numerical mismatch"
                 elif isinstance(v1, np.ndarray):
                     if v1.dtype != v2.dtype:
-                        v2_converted = v2.astype(v1.dtype)
+                        if np.issubdtype(
+                            v2.dtype, np.complexfloating
+                        ) and not np.issubdtype(v1.dtype, np.complexfloating):
+                            v2_converted = np.real(v2).astype(v1.dtype)
+                        else:
+                            v2_converted = v2.astype(v1.dtype)
                         assert (
                             v1 == v2_converted
                         ).all(), f"Filter {key}.{k} array mismatch"

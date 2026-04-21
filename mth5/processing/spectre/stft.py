@@ -13,8 +13,7 @@ from mt_metadata.processing.aurora.decimation_level import (
     DecimationLevel as AuroraDecimationLevel,
 )
 from mt_metadata.processing.fourier_coefficients import Decimation as FCDecimation
-
-from mth5.timeseries.spectre.spectrogram import Spectrogram
+from mt_timeseries.spectre.spectrogram import Spectrogram
 
 from .prewhitening import apply_prewhitening, apply_recoloring
 

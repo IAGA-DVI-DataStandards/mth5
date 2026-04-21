@@ -244,7 +244,7 @@ def add_filters(
     --------
     Add filters to MTH5 file::
 
-        >>> from mth5.timeseries import Filter
+        >>> from mt_timeseries import Filter
         >>> filters = [Filter(name='test_filter')]
         >>> add_filters('/path/to/file.mth5', filters)
 
