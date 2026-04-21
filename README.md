@@ -75,6 +75,7 @@ MTH5 File Version 0.2.0
 MTH5 file version **0.2.0** has `Experiment` as the top level.  This allows for multiple `Surveys` to be included in a single file and therefore allows for more flexibility.  For example if you would like to remote reference stations in a local survey with stations from a different survey collected at the same time you can have all those surveys and stations in the same file and make it easier for processing.
 
 **Hint**: MTH5 is comprehensively logged, therefore if any problems arise you can always check the mth5_debug.log (if you are in debug mode, change the mode in the mth5.__init__) and the mth5_error.log, which will be written to your current working directory.
+
 ## Features
 
 - Read and write HDF5 files formatted for magnetotelluric time series, transfer functions, and Fourier coefficients.
