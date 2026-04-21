@@ -11,10 +11,10 @@ Created on Fri Oct 11 11:48:24 2024
 # Imports
 # =============================================================================
 import unittest
-
 from pathlib import Path
 
 from mth5.clients.lemi import LEMIClient
+
 
 # =============================================================================
 
@@ -80,9 +80,7 @@ class TestLEMI424SampleRates(unittest.TestCase):
 
     def setUp(self):
         self.file_path = Path(__file__).parent
-        self.client = LEMIClient(
-            self.file_path, sample_rates=[1]
-        )
+        self.client = LEMIClient(self.file_path, sample_rates=[1])
 
     def test_lemi424_sample_rate(self):
         """LEMI-424 operates at 1 Hz"""
@@ -102,14 +100,8 @@ class TestLEMI423SampleRates(unittest.TestCase):
 
     def test_lemi423_multiple_sample_rates(self):
         """LEMI-423 can search for multiple sample rates"""
-        client = LEMIClient(
-            self.file_path,
-            sample_rates=[4000, 2000, 1000, 500, 250]
-        )
-        self.assertEqual(
-            client.sample_rates,
-            [4000.0, 2000.0, 1000.0, 500.0, 250.0]
-        )
+        client = LEMIClient(self.file_path, sample_rates=[4000, 2000, 1000, 500, 250])
+        self.assertEqual(client.sample_rates, [4000.0, 2000.0, 1000.0, 500.0, 250.0])
 
     def test_default_sample_rates(self):
         """Default sample rates should include both LEMI-424 and LEMI-423 rates"""
@@ -166,13 +158,14 @@ class TestLEMI120CoilResponse(unittest.TestCase):
         filter_obj = lemi120.get_coil_response()
 
         # Check filter properties
-        self.assertEqual(filter_obj.units_in, "nanotesla")
-        self.assertEqual(filter_obj.units_out, "millivolts")
-        self.assertEqual(filter_obj.type, "frequency response table")
+        self.assertEqual(filter_obj.units_in, "nanoTesla")
+        self.assertEqual(filter_obj.units_out, "milliVolt")
+        self.assertEqual(filter_obj.type, "fap")
         self.assertTrue(filter_obj.name.startswith("lemi_120"))
 
         # Check that frequencies, amplitudes, and phases are numpy arrays
         import numpy as np
+
         self.assertIsInstance(filter_obj.frequencies, np.ndarray)
         self.assertIsInstance(filter_obj.amplitudes, np.ndarray)
         self.assertIsInstance(filter_obj.phases, np.ndarray)

@@ -9,7 +9,16 @@ import xarray as xr
 import h5py
 from loguru import logger
 
-from mt_io.reader import read_file
+try:
+    from mt_io.reader import read_file
+except ModuleNotFoundError:
+
+    def read_file(*args, **kwargs):
+        raise ModuleNotFoundError(
+            "mt_io is required for read_file(). Install mt-io to enable file readers."
+        )
+
+
 import mt_timeseries.scipy_filters
 
 # # Register xarray accessors

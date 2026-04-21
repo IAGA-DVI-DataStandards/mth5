@@ -33,6 +33,7 @@ import pandas as pd
 
 from . import (
     FDSN,
+    LEMI424Client,
     LEMIClient,
     MetronixClient,
     NIMSClient,
@@ -1138,17 +1139,26 @@ class MakeMTH5:
         **kwargs,
     ):
         """
-        Backward compatibility alias for :meth:`from_lemi`.
+        Backward-compatible constructor that uses ``LEMI424Client``.
         """
-        return cls.from_lemi(
+        maker = cls(**kwargs)
+        kw_dict = maker.get_h5_kwargs()
+
+        if mth5_filename is None:
+            mth5_filename = "from_lemi424.h5"
+
+        if sample_rates is None:
+            sample_rates = [1]
+
+        lemi_client = LEMI424Client(
             data_path,
-            survey_id,
-            station_id,
+            save_path=save_path,
             sample_rates=sample_rates,
             mth5_filename=mth5_filename,
-            save_path=save_path,
-            **kwargs,
+            **kw_dict,
         )
+
+        return lemi_client.make_mth5_from_lemi424(survey_id, station_id)
 
     @classmethod
     def from_metronix(
