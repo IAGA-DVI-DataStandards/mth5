@@ -85,7 +85,7 @@ jobs:
       - name: Extract version
         id: version
         run: |
-          VERSION=$(bump-my-version show current)
+          VERSION=$(grep '^version = ' pyproject.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
           echo "Extracted version: $VERSION"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
