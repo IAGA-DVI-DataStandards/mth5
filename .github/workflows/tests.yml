@@ -58,7 +58,7 @@ jobs:
           pytest-benchmark \
           setuptools \
           "mt_metadata[obspy]" \
-          "git+htpps://github.com/kujaku11/mt-io.git@develop" \
+          "git+https://github.com/kujaku11/mt-io.git@develop" \
           "git+https://github.com/kujaku11/mth5_test_data.git"
 
     - name: Install Our Package
