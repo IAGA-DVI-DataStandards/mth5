@@ -4,6 +4,7 @@
 # Imports
 # =============================================================================
 import sys
+from importlib import import_module
 import numpy as np
 import xarray as xr
 import h5py
@@ -169,3 +170,15 @@ STANDARDS_DTYPE_LIST = [
     ("default", "S72"),
 ]
 STANDARDS_DTYPE = np.dtype(STANDARDS_DTYPE_LIST)
+
+
+_LAZY_SUBMODULES = {"clients", "io"}
+
+
+def __getattr__(name):
+    """Lazily expose package submodules for dotted-path resolvers."""
+    if name in _LAZY_SUBMODULES:
+        module = import_module(f"{__name__}.{name}")
+        globals()[name] = module
+        return module
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

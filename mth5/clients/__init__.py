@@ -13,38 +13,16 @@ _SYMBOL_TO_MODULE = {
     "PhoenixClient": ".phoenix",
     "ZenClient": ".zen",
     "LEMIClient": ".lemi",
-    "LEMI424Client": ".lemi",
+    "LEMI424Client": ".lemi424",
+    "LEMI417Client": ".lemi417",
     "MetronixClient": ".metronix",
     "NIMSClient": ".nims",
     "UoAClient": ".uoa",
     "MakeMTH5": ".make_mth5",
 }
-# package file
 
-from .fdsn import FDSN
-from .geomag import USGSGeomag
-from .phoenix import PhoenixClient
-from .zen import ZenClient
-from .lemi424 import LEMI424Client
-from .lemi417 import LEMI417Client
-from .metronix import MetronixClient
-from .nims import NIMSClient
-from .make_mth5 import MakeMTH5
 
-__all__ = [
-    "FDSN",
-    "USGSGeomag",
-    "PhoenixClient",
-    "ZenClient",
-    "LEMIClient",
-    "LEMI424Client",  # Deprecated alias for backward compatibility
-    "LEMI424Client",
-    "LEMI417Client",
-    "MetronixClient",
-    "NIMSClient",
-    "UoAClient",
-    "MakeMTH5",
-]
+__all__ = list(_SYMBOL_TO_MODULE.keys())
 
 
 def __getattr__(name):
