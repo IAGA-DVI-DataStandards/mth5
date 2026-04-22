@@ -12,10 +12,12 @@ Supported Clients include:
     * NCI - Australia (TODO)
     * Phoenix MTU-5C
     * Zen
-    * LEMI 424
     * Phoenix legacy MTU (TODO)
     * Metronix Geophysics
     * USGS Geomagnetism
+    * LEMI (424 and 423)
+    * Metronix
+    * UoA (PR6-24 and Orange Box)
 
 
 Updated on Wed Aug  25 19:57:00 2021
@@ -33,9 +35,11 @@ from . import (
     FDSN,
     LEMI417Client,
     LEMI424Client,
+    LEMIClient,
     MetronixClient,
     NIMSClient,
     PhoenixClient,
+    UoAClient,
     USGSGeomag,
     ZenClient,
 )
@@ -1023,4 +1027,342 @@ class MakeMTH5:
             **kw_dict,
         )
 
-        return nc.make_mth5_from_nims(survey_id=survey_id, combine=combine, **kwargs)
+        return zc.make_mth5_from_zen(survey_id=survey_id, combine=combine, **kwargs)
+
+    @classmethod
+    def from_phoenix(
+        cls,
+        data_path,
+        mth5_filename=None,
+        save_path=None,
+        sample_rates=[150, 24000],
+        receiver_calibration_dict=None,
+        sensor_calibration_dict=None,
+        **kwargs,
+    ):
+        """
+        Build an H5 file from Phoenix MTU-5C files.  The key step when working
+        with Phoenix data is to export the scal and rxcal files into JSON using
+        EMPower.  Place these files in a folder that you can easily find, and
+        you can use this folder as inputs for the `receiver_calibration_dict`
+        and `sensor_calibration_dict` which will search the folder and read
+        in all the rxcal and scal files into appropriate dictionaries such
+        that the filters will be linked with the data for appropriate
+        calibration.
+
+        Any H5 file parameters like compression, shuffle, etc need to have a
+        prefix of 'h5'. For example h5_compression='gzip'.
+
+        >>> MakeMTH5.from_phoenix(
+            data_path, **{'h5_compression_opts': 1}
+            )
+
+        :param data_path: Directory where data files are, could be a single
+         station or a full directory of stations.
+        :type data_path: str or Path
+        :param mth5_filename: filename for the H5, defaults to 'from_phoenix.h5'
+        :type mth5_filename: str, optional
+        :param save_path: path to save H5 file to, defaults to None which will
+         place the file in `data_path`
+        :type save_path: str or Path, optional
+        :param sample_rates: sample rates to include in file, defaults to
+         [150, 24000]
+        :type sample_rates: list, optional
+        :param receiver_calibration_dict: This can either be a directory path to
+         where the rxcal.json files are or a dictionary where keys are the
+         receiver IDs and the values are the filename of the rxcal.json file,
+         defaults to None
+        :type receiver_calibration_dict: str, Path or dict, optional
+        :param sensor_calibration_dict: This can either be a directory path to
+         where the scal.json files are or a dictionary where keys are the
+         sensor IDs and the values are the `PhoenixCalibration` objects that
+         have read in the scal.json file for that sensor, defaults to None
+        :type sensor_calibration_dict: str, Path, dict, optional
+        :return: Path to MTH5 file
+        :rtype: Path
+
+        """
+
+        maker = cls(**kwargs)
+        kw_dict = maker.get_h5_kwargs()
+
+        phx_client = PhoenixClient(
+            data_path,
+            mth5_filename=mth5_filename,
+            sample_rates=sample_rates,
+            receiver_calibration_dict=receiver_calibration_dict,
+            sensor_calibration_dict=sensor_calibration_dict,
+            save_path=save_path,
+            **kw_dict,
+        )
+
+        return phx_client.make_mth5_from_phoenix()
+
+    @classmethod
+    def from_lemi(
+        cls,
+        data_path,
+        survey_id,
+        station_id,
+        sample_rates=None,
+        mth5_filename=None,
+        save_path=None,
+        **kwargs,
+    ):
+        """
+        Build a MTH5 file from LEMI instrument data.
+
+        Supports both LEMI-424 (long period, .txt) and LEMI-423 (broadband, .B423).
+        Works mainly on a station by station basis because there is limited metadata
+        in LEMI files.
+
+        Any H5 file parameters like compression, shuffle, etc need to have a
+        prefix of 'h5'. For example h5_compression='gzip'.
+
+        :Example:
+
+            >>> # LEMI-424 data
+            >>> MakeMTH5.from_lemi(
+            ...     '/data/lemi424', 'Survey01', 'MT001',
+            ...     sample_rates=[1],
+            ...     **{'h5_compression_opts': 1}
+            ... )
+            >>>
+            >>> # LEMI-423 data at 1000 Hz
+            >>> MakeMTH5.from_lemi(
+            ...     '/data/lemi423', 'Survey01', 'MT002',
+            ...     sample_rates=[1000]
+            ... )
+            >>>
+            >>> # LEMI-423 data, unknown rate (include all possible rates)
+            >>> MakeMTH5.from_lemi(
+            ...     '/data/lemi423', 'Survey01', 'MT003',
+            ...     sample_rates=[4000, 2000, 1000, 500, 250]
+            ... )
+
+        :param data_path: Directory where LEMI data files are, could be a single
+         station or a full directory of stations.
+        :type data_path: str or Path
+        :param survey_id: Survey ID for all stations
+        :type survey_id: str
+        :param station_id: Station ID for station
+        :type station_id: str
+        :param sample_rates: Sample rates to include. If None, will auto-detect and
+         include all sample rates found in files. If specified, only processes files
+         matching those rates. Valid rates:
+         - LEMI-424: [1] Hz (long period only)
+         - LEMI-423: [4000], [2000], [1000], [500], [250] Hz (broadband, auto-detected)
+         Examples:
+         - None (default): Process all files regardless of sample rate
+         - [1]: Only LEMI-424 files
+         - [1000]: Only LEMI-423 files recorded at 1000 Hz
+         - [4000, 2000, 1000, 500, 250]: All possible LEMI-423 rates
+        :type sample_rates: list or None, optional
+        :param mth5_filename: Filename for the H5, defaults to 'from_lemi.h5'
+        :type mth5_filename: str, optional
+        :param save_path: Path to save H5 file to, defaults to None which will
+         place the file in `data_path`
+        :type save_path: str or Path, optional
+        :return: Path to MTH5 file
+        :rtype: Path
+
+        .. note::
+            - LEMI-424 files are .txt format at 1 Hz sample rate
+            - LEMI-423 files are .B423 format with variable sample rates
+            - Station and survey IDs must be provided (not in file metadata)
+        """
+        maker = cls(**kwargs)
+        kw_dict = maker.get_h5_kwargs()
+
+        # If sample_rates is None, include all possible rates for auto-detection
+        # This allows both LEMI-424 (1 Hz) and LEMI-423 (4000/2000/1000/500/250 Hz)
+        # to be processed without user having to specify
+        if sample_rates is None:
+            sample_rates = [1, 4000, 2000, 1000, 500, 250]
+
+        lemi_client = LEMIClient(
+            data_path,
+            save_path=save_path,
+            sample_rates=sample_rates,
+            mth5_filename=mth5_filename,
+            **kw_dict,
+        )
+
+        return lemi_client.make_mth5_from_lemi(survey_id, station_id)
+
+    @classmethod
+    def from_lemi424(
+        cls,
+        data_path,
+        survey_id,
+        station_id,
+        sample_rates=None,
+        mth5_filename=None,
+        save_path=None,
+        **kwargs,
+    ):
+        """
+        Backward-compatible constructor that uses ``LEMI424Client``.
+        """
+        maker = cls(**kwargs)
+        kw_dict = maker.get_h5_kwargs()
+
+        if mth5_filename is None:
+            mth5_filename = "from_lemi424.h5"
+
+        if sample_rates is None:
+            sample_rates = [1]
+
+        lemi_client = LEMI424Client(
+            data_path,
+            save_path=save_path,
+            sample_rates=sample_rates,
+            mth5_filename=mth5_filename,
+            **kw_dict,
+        )
+
+        return lemi_client.make_mth5_from_lemi424(survey_id, station_id)
+
+    @classmethod
+    def from_metronix(
+        cls,
+        data_path,
+        sample_rates=[128],
+        mth5_filename=None,
+        save_path=None,
+        run_name_zeros=0,
+        **kwargs,
+    ):
+        """
+        Build a MTH5 file from Metronix Geophysics ATSS + JSON files saved in
+        their new folder structure.
+
+        :param data_path: Highest level of where you want to archive data from,
+         usuall the survey level.  If you want just a single station, then use
+         the station folder path.
+        :type data_path: str or pathlib.Path
+        :param sample_rates: sample rates to archive in samples/sercond,
+         defaults to [128]
+        :type sample_rates: list of floats, optional
+        :param mth5_filename: filename for the H5, defaults to 'from_lemi424.h5'
+        :type mth5_filename: str, optional
+        :param save_path: path to save H5 file to, defaults to None which will
+         place the file in `data_path`
+        :type save_path: str or Path, optional
+        :param run_name_zeros: number of zeros to include in new run names, will
+         be named as 'sr{sample_rate}_{run_id:0{run_name_zeros}}'.  If set to
+         0 then will use the original run name, usually 'run_0001'.
+        :type run_name_zeros: int, defaults to 0
+        :return: Path to MTH5 file
+        :rtype: Path
+
+        """
+        maker = cls(**kwargs)
+        kw_dict = maker.get_h5_kwargs()
+
+        metronix_client = MetronixClient(
+            data_path,
+            sample_rates=sample_rates,
+            save_path=save_path,
+            mth5_filename=mth5_filename,
+            **kw_dict,
+        )
+
+        return metronix_client.make_mth5_from_metronix(run_name_zeros=run_name_zeros)
+
+    @classmethod
+    def from_uoa(
+        cls,
+        data_path,
+        survey_id,
+        station_id,
+        instrument_type,
+        run_id="001",
+        mth5_filename=None,
+        save_path=None,
+        **kwargs,
+    ):
+        """
+        Build a MTH5 file from University of Adelaide instrument data.
+
+        Supports PR6-24 (Earth Data Logger) and Orange Box instruments.
+
+        Any H5 file parameters like compression, shuffle, etc need to have a
+        prefix of 'h5'. For example h5_compression='gzip'.
+
+        :Example:
+
+            >>> # PR6-24 long-period data
+            >>> MakeMTH5.from_uoa(
+            ...     '/data/pr624', 'Survey01', 'MT001',
+            ...     instrument_type='pr624',
+            ...     sample_rate=10.0,
+            ...     sensor_type='bartington',
+            ...     dipole_length_ex=50.0,
+            ...     dipole_length_ey=50.0,
+            ...     **{'h5_compression_opts': 1}
+            ... )
+            >>>
+            >>> # Orange Box data
+            >>> MakeMTH5.from_uoa(
+            ...     '/data/orange', 'Survey01', 'ST61',
+            ...     instrument_type='orange',
+            ...     dipole_length_ex=100.0,
+            ...     dipole_length_ey=100.0
+            ... )
+
+        :param data_path: Directory or file path to UoA data
+        :type data_path: str or Path
+        :param survey_id: Survey ID
+        :type survey_id: str
+        :param station_id: Station ID
+        :type station_id: str
+        :param instrument_type: 'pr624' or 'orange'
+        :type instrument_type: str
+        :param run_id: Run ID, defaults to "001"
+        :type run_id: str, optional
+        :param mth5_filename: Filename for the H5, defaults to 'from_uoa.h5'
+        :type mth5_filename: str, optional
+        :param save_path: Path to save H5 file to, defaults to None which will
+         place the file in `data_path`
+        :type save_path: str or Path, optional
+        :param kwargs: Additional arguments for reader:
+
+            **PR6-24 arguments:**
+                - sample_rate (float): REQUIRED - sample rate in Hz
+                - sensor_type (str): 'bartington' or 'lemi120'
+                - dipole_length_ex (float): Ex dipole length in meters
+                - dipole_length_ey (float): Ey dipole length in meters
+                - calibration_fn_bx (str): LEMI-120 .rsp file for Bx
+                - calibration_fn_by (str): LEMI-120 .rsp file for By
+                - calibration_fn_bz (str): LEMI-120 .rsp file for Bz
+                - latitude (float): Station latitude
+                - longitude (float): Station longitude
+                - elevation (float): Station elevation
+
+            **Orange Box arguments:**
+                - dipole_length_ex (float): Ex dipole length in meters
+                - dipole_length_ey (float): Ey dipole length in meters
+                - latitude (float): Station latitude
+                - longitude (float): Station longitude
+                - elevation (float): Station elevation
+
+        :return: Path to MTH5 file
+        :rtype: Path
+
+        .. note::
+            - PR6-24 requires sample_rate parameter (not in file metadata)
+            - Orange Box auto-detects sample rate from file header
+        """
+        maker = cls(**kwargs)
+        kw_dict = maker.get_h5_kwargs()
+
+        uoa_client = UoAClient(
+            data_path,
+            instrument_type=instrument_type,
+            save_path=save_path,
+            mth5_filename=mth5_filename,
+            **kw_dict,
+        )
+
+        return uoa_client.make_mth5_from_uoa(survey_id, station_id, run_id, **kwargs)
