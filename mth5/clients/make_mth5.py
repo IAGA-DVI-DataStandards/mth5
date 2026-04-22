@@ -31,6 +31,7 @@ import pandas as pd
 
 from . import (
     FDSN,
+    LEMI417Client,
     LEMI424Client,
     MetronixClient,
     NIMSClient,
@@ -792,6 +793,68 @@ class MakeMTH5:
         )
 
         return lemi_client.make_mth5_from_lemi424(survey_id, station_id)
+
+    @classmethod
+    def from_lemi417(
+        cls,
+        data_path: str | Path,
+        survey_id: str,
+        station_id: str,
+        mth5_filename: str = "from_lemi417.h5",
+        save_path: str | Path = Path().cwd(),
+        **kwargs,
+    ):
+        """
+        Create MTH5 from LEMI-417 long period data.
+
+        Builds an MTH5 file from LEMI-417 instrument data on a station-by-station
+        basis. LEMI data has limited metadata, so survey and station IDs must
+        be provided.
+
+        Parameters
+        ----------
+        data_path : str or Path
+            Directory where LEMI-417 data files are stored. Can be single
+            station or full directory.
+        survey_id : str
+            Survey ID to apply to all stations
+        station_id : str
+            Station ID for this station's data
+        mth5_filename : str, default 'from_lemi417.h5'
+            Filename for the MTH5 output file
+        save_path : str or Path, default current directory
+            Directory to save MTH5 file
+        **kwargs : dict
+            Additional keyword arguments. HDF5 parameters should be prefixed
+            with 'h5_' (e.g., h5_compression='gzip').
+
+        Returns
+        -------
+        Path
+            Path to created MTH5 file
+
+        Notes
+        -----
+        LEMI-417 is a long-period magnetotelluric instrument. Data files have
+        limited embedded metadata, requiring manual specification of survey
+        and station information.
+
+        Process each station individually due to minimal automatic metadata
+        extraction capabilities.
+        """
+        maker = cls(**kwargs)
+        kw_dict = maker.get_h5_kwargs()
+        kw_dict.pop("mth5_filename", None)
+        kw_dict.pop("save_path", None)
+
+        lemi_client = LEMI417Client(
+            data_path,
+            save_path=save_path,
+            mth5_filename=mth5_filename,
+            **kw_dict,
+        )
+
+        return lemi_client.make_mth5_from_lemi417(survey_id, station_id)
 
     @classmethod
     def from_metronix(
