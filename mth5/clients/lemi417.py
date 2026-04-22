@@ -11,9 +11,10 @@ Implemented based on lemi424.py(by jpeacock).
 from pathlib import Path
 from typing import Any, Optional, Union
 
+from mt_io.lemi import LEMICollection
+
 from mth5 import read_file
 from mth5.clients.base import ClientBase
-from mth5.io.lemi417 import LEMICollection
 
 # =============================================================================
 # Imports

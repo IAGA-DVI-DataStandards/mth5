@@ -33,6 +33,7 @@ import pandas as pd
 
 from . import (
     FDSN,
+    LEMI417Client,
     LEMI424Client,
     LEMIClient,
     MetronixClient,
@@ -849,9 +850,6 @@ class MakeMTH5:
         kw_dict = maker.get_h5_kwargs()
         kw_dict.pop("mth5_filename", None)
         kw_dict.pop("save_path", None)
-
-        # Imported lazily because LEMI-417 support may be unavailable in split installs.
-        from .lemi417 import LEMI417Client
 
         lemi_client = LEMI417Client(
             data_path,
