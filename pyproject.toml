@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mth5"
-version = "0.6.6"
+version = "0.6.7"
 description = "Archivable and exchangeable format for magnetotelluric data"
 authors = [
     {name = "Jared Peacock", email = "jpeacock@usgs.gov"},
@@ -129,7 +129,7 @@ use_parentheses = true
 ensure_newline_before_comments = true
 
 [tool.bumpversion]
-current_version = "0.6.6"
+current_version = "0.6.7"
 commit = true
 tag = true
 
