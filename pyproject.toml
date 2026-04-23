@@ -32,8 +32,8 @@ dependencies = [
     "pyyaml",
     "scipy",
     "mt_metadata>=1.0.0",
-    "mt_timeseries>=0.0.3",
-    "mt-io",
+    "mt_timeseries>=0.0.2",
+    "mt-io>=0.0.3",
 ]
 
 [project.urls]
