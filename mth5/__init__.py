@@ -4,12 +4,22 @@
 # Imports
 # =============================================================================
 import sys
+from importlib import import_module
 import numpy as np
 import xarray as xr
 import h5py
 from loguru import logger
 
-from mt_io.reader import read_file
+try:
+    from mt_io.reader import read_file
+except ModuleNotFoundError:
+
+    def read_file(*args, **kwargs):
+        raise ModuleNotFoundError(
+            "mt_io is required for read_file(). Install mt-io to enable file readers."
+        )
+
+
 import mt_timeseries.scipy_filters
 
 # # Register xarray accessors
@@ -21,7 +31,7 @@ import mt_timeseries.scipy_filters
 
 __author__ = """Jared Peacock"""
 __email__ = "jpeacock@usgs.gov"
-__version__ = "0.6.6"
+__version__ = "0.6.7"
 
 
 # =============================================================================
@@ -160,3 +170,15 @@ STANDARDS_DTYPE_LIST = [
     ("default", "S72"),
 ]
 STANDARDS_DTYPE = np.dtype(STANDARDS_DTYPE_LIST)
+
+
+_LAZY_SUBMODULES = {"clients", "io"}
+
+
+def __getattr__(name):
+    """Lazily expose package submodules for dotted-path resolvers."""
+    if name in _LAZY_SUBMODULES:
+        module = import_module(f"{__name__}.{name}")
+        globals()[name] = module
+        return module
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
