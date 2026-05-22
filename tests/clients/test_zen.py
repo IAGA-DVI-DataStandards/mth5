@@ -46,7 +46,7 @@ def temp_file_path(temp_data_dir):
 @pytest.fixture
 def basic_zen_client(temp_data_dir):
     """Create a basic ZenClient instance for testing."""
-    return ZenClient(temp_data_dir, **{"h5_mode": "w", "h5_driver": "sec2"})
+    return ZenClient(temp_data_dir, **{"h5_mode": "a", "h5_driver": "sec2"})
 
 
 @pytest.fixture
@@ -486,7 +486,7 @@ class TestZenClientMTH5Creation:
 
         # Verify calls
         mock_mth5_instance.open_mth5.assert_called_once_with(
-            basic_zen_client.save_path, "w"
+            basic_zen_client.save_path, "a"
         )
         mock_mth5_instance.add_survey.assert_called_once()
         mock_survey_group.stations_group.add_station.assert_called_once()
@@ -970,7 +970,7 @@ class TestZenClientBackwardCompatibility:
         """Test that all original test cases still pass with new implementation."""
         # Original test: basic initialization
         file_path = temp_data_dir / "test.h5"
-        base = ZenClient(file_path.parent, **{"h5_mode": "w", "h5_driver": "sec2"})
+        base = ZenClient(file_path.parent, **{"h5_mode": "a", "h5_driver": "sec2"})
 
         # Original test: h5_kwargs keys
         keys = [

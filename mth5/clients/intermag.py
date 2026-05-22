@@ -53,7 +53,6 @@ class IntermagClient:
 
     def __init__(self, **kwargs):
         self._base_url = r"https://imag-data.bgs.ac.uk/GIN_V1/GINServices"
-        # Ask Jared Peacock about this
         self._timeout = 120
 
         self._valid_observatories = [
@@ -382,44 +381,6 @@ class IntermagClient:
             self._end = None
         else:
             self._end = MTime(time_stamp=value)
-
-    def get_chunks(self):
-        """
-        Get the number of chunks of allowable sized to request, includes the elements
-
-        So the max length is the maximum time period that can be requested but includes
-        the number of elements in the request.  So if the max length is 172800 seconds
-        and the sampling period is 1 second, then the maximum number of elements that can
-        be requested is 172800 / (1 * len(elements)).
-
-        :return: DESCRIPTION
-        :rtype: TYPE
-
-        """
-
-        if self.start is not None and self.end is not None:
-            dt = np.arange(
-                np.datetime64(self._start.iso_no_tz),
-                np.datetime64(self._end.iso_no_tz),
-                np.timedelta64(
-                    int(
-                        (round(self._max_length / len(self.elements)))
-                        * self.sampling_period
-                    ),
-                    "s",
-                ),
-            )
-            dt = np.append(dt, np.array([np.datetime64(self._end.iso_no_tz)]))
-
-            dt_request = [
-                (
-                    f"{MTime(time_stamp=dt[ii]).iso_no_tz}Z",
-                    f"{MTime(time_stamp=dt[ii + 1]).iso_no_tz}Z",
-                )
-                for ii in range(len(dt) - 1)
-            ]
-
-            return dt_request
 
     def _get_request_params(self, start, end):
         """
