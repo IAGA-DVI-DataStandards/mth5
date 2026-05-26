@@ -484,6 +484,13 @@ class BaseGroup:
         >>> print(base_obj.metadata.id)
         'UpdatedGroup'
         """
+        file_mode = getattr(getattr(self.hdf5_group, "file", None), "mode", "")
+        can_write = "w" in file_mode or "+" in file_mode
+
+        if not can_write:
+            self.logger.warning("File is in read-only mode, cannot write metadata.")
+            return
+
         try:
             for key, value in self.metadata.to_dict(single=True).items():
                 value = to_numpy_type(value)
