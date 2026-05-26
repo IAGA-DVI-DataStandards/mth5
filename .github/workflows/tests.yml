@@ -81,9 +81,15 @@ jobs:
     #    jupyter nbconvert --to notebook --execute docs/examples/notebooks/make_mth5_driver_v0.2.0.ipynb
 
     - name: Run Tests
-      run: pytest -vv --cov=./ --cov-report=xml --cov=mth5 -n auto tests -k "not slow"
+      run: |
+        if [ "${{ matrix.python-version }}" = "3.13" ]; then
+          pytest -vv --cov=./ --cov-report=xml --cov=mth5 -n auto tests -k "not slow"
+        else
+          pytest -vv -n auto tests -k "not slow"
+        fi
 
     - name: Upload coverage to Codecov
+      if: matrix.python-version == '3.13'
       uses: codecov/codecov-action@v3
       with:
         flags: tests
