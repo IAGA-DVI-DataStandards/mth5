@@ -495,7 +495,11 @@ class TransferFunctionGroup(BaseGroup):
         try:
             estimate_dataset = self.hdf5_group[estimate_name]
             estimate_metadata = StatisticalEstimate(**dict(estimate_dataset.attrs))
-            return EstimateDataset(estimate_dataset, dataset_metadata=estimate_metadata)
+            return EstimateDataset(
+                estimate_dataset,
+                dataset_metadata=estimate_metadata,
+                write_metadata=False,
+            )
         except KeyError:
             msg = (
                 f"{estimate_name} does not exist, "
