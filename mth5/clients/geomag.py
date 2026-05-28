@@ -9,6 +9,7 @@ import json
 import platform
 import sys
 from pathlib import Path
+from loguru import logger
 
 import numpy as np
 import pandas as pd
@@ -378,7 +379,66 @@ class GeomagClient:
 
         return sm
 
-    def get_data(self, run_id="001"):
+    def _get_station_metadata(self, interval):
+        """
+        get station metadata from request json
+
+        :param request_json: DESCRIPTION
+        :type request_json: TYPE
+        :return: DESCRIPTION
+        :rtype: TYPE
+
+        """
+        request_obj = self._request_data(
+            self._get_request_dictionary(interval[0], interval[1])
+        )
+
+        if request_obj.status_code == 200:
+            request_json = json.loads(request_obj.content)
+            return self._to_station_metadata(request_json["metadata"])
+        else:
+            raise IOError(
+                "Could not connect to server. Error code: " f"{request_obj.status_code}"
+            )
+
+    def _get_interval_data(self, interval):
+        """
+        get data for a given interval
+
+        :param interval: DESCRIPTION
+        :type interval: TYPE
+        :return: DESCRIPTION
+        :rtype: TYPE
+
+        """
+
+        request_obj = self._request_data(
+            self._get_request_dictionary(interval[0], interval[1])
+        )
+
+        if request_obj.status_code == 200:
+            request_json = json.loads(request_obj.content)
+
+            request_df = pd.DataFrame(
+                dict(
+                    [
+                        (
+                            element["metadata"]["element"].lower(),
+                            np.array(element["values"], dtype=float),
+                        )
+                        for element in request_json["values"]
+                    ]
+                ),
+                index=request_json["times"],
+            )
+            return request_df
+
+        else:
+            raise IOError(
+                "Could not connect to server. Error code: " f"{request_obj.status_code}"
+            )
+
+    def get_data(self, run_id="001", request_max=5):
         """
         Get data from geomag client at USGS based on the request.  This might
         have to be done in chunks depending on the request size.  The returned
@@ -394,38 +454,51 @@ class GeomagClient:
 
         """
 
-        ch = dict([(c.lower(), []) for c in self.elements])
+        df_list = []
 
         for interval in self.get_chunks():
-            request_obj = self._request_data(
-                self._get_request_dictionary(interval[0], interval[1])
-            )
-            if request_obj.status_code == 200:
-                request_json = json.loads(request_obj.content)
-                for element in request_json["values"]:
-                    ch[element["metadata"]["element"].lower()].append(
-                        pd.DataFrame(
-                            {
-                                "data": element["values"],
-                            },
-                            index=request_json["times"],
+            logger.info("Requesting data from USGS Geogmag...")
+            request_num = 0
+            has_nan = False
+            while request_num <= request_max:
+                request_num += 1
+                request_df = self._get_interval_data(interval)
+                has_nan = request_df.isna().sum().to_numpy().any()
+                if has_nan:
+                    for col in request_df.columns:
+                        nan_count = request_df[col].isna().sum()
+                        if nan_count > 0:
+                            logger.warning(
+                                f"Found {nan_count} NaN values in {col} for "
+                                f"{interval[0]} to {interval[1]}. Retrying request"
+                            )
+                    if request_num < request_max:
+                        continue
+                    else:
+                        logger.warning(
+                            f"Reached maximum number of requests ({request_max}) for interval "
+                            f"{interval[0]} to {interval[1]} with NaN values. "
+                            "Proceeding with NaN values in data."
                         )
-                    )
-            else:
-                raise IOError(
-                    "Could not connect to server. Error code: "
-                    f"{request_obj.status_code}"
-                )
+
+                    df_list.append(request_df)
+                    break
+                else:
+                    df_list.append(request_df)
+                    break
 
         survey_metadata = Survey(id="USGS-GEOMAG")
-        station_metadata = self._to_station_metadata(request_json["metadata"])
+        station_metadata = self._get_station_metadata(interval)
         run_metadata = Run(id=run_id)
 
+        df = pd.concat(df_list).astype(float)
+        df.sort_index(inplace=True)
+
         ch_list = []
-        for key, df_list in ch.items():
-            df = pd.concat(df_list).astype(float)
+        for col in df.columns:
+
             ch_metadata = Magnetic()
-            ch_metadata.component = self._ch_map[key]
+            ch_metadata.component = self._ch_map[col]
             ch_metadata.sample_rate = 1.0 / self.sampling_period
             ch_metadata.units = "nanotesla"
             if "y" in ch_metadata.component:
@@ -444,7 +517,7 @@ class GeomagClient:
             ch_list.append(
                 ChannelTS(
                     channel_type="magnetic",
-                    data=df,
+                    data=df[col].values,
                     channel_metadata=ch_metadata,
                     run_metadata=run_metadata,
                     station_metadata=station_metadata,
