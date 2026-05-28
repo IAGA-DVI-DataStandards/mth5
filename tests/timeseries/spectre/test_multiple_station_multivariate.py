@@ -5,7 +5,6 @@ This is an optimized pytest version of test_multiple_station.py with comprehensi
 test coverage, fixtures, and subtests. Designed for pytest-xdist compatibility.
 """
 
-
 import numpy as np
 import pandas as pd
 import pytest
@@ -375,7 +374,7 @@ class TestMultivariateDatasetBasics:
 
         with subtests.test("is_spectrogram_subclass"):
             # Should inherit from Spectrogram
-            from mth5.timeseries.spectre import Spectrogram
+            from mt_timeseries.spectre import Spectrogram
 
             assert isinstance(mvd, Spectrogram)
 

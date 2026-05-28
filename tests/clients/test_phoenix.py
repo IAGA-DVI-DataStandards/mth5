@@ -17,10 +17,10 @@ from unittest.mock import MagicMock, Mock, patch
 # Imports
 # =============================================================================
 import pytest
+from mt_io.phoenix import PhoenixCollection
+from mt_io.phoenix.readers.calibrations import PhoenixCalibration
 
 from mth5.clients.phoenix import PhoenixClient
-from mth5.io.phoenix import PhoenixCollection
-from mth5.io.phoenix.readers.calibrations import PhoenixCalibration
 
 
 # =============================================================================

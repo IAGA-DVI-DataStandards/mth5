@@ -17,9 +17,9 @@ from unittest.mock import MagicMock, Mock, patch
 # Imports
 # =============================================================================
 import pytest
+from mt_io.zen import Z3DCollection
 
 from mth5.clients.zen import ZenClient
-from mth5.io.zen import Z3DCollection
 
 
 # =============================================================================

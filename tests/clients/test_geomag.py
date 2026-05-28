@@ -18,9 +18,9 @@ from unittest.mock import MagicMock, Mock, patch
 import numpy as np
 import pandas as pd
 import pytest
+from mt_timeseries import ChannelTS, RunTS
 
 from mth5.clients.geomag import GeomagClient, USGSGeomag
-from mth5.timeseries import ChannelTS, RunTS
 
 
 # =============================================================================

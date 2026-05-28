@@ -8,9 +8,10 @@ Created on Fri Oct 11 10:57:54 2024
 from pathlib import Path
 from typing import Any, Optional, Union
 
+from mt_io.lemi import LEMICollection
+
 from mth5 import read_file
 from mth5.clients.base import ClientBase
-from mth5.io.lemi import LEMICollection
 
 # =============================================================================
 # Imports

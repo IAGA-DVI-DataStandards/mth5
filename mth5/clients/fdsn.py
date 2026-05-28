@@ -22,11 +22,11 @@ import obspy
 import pandas as pd
 from loguru import logger
 from mt_metadata.timeseries.stationxml import XMLInventoryMTExperiment
+from mt_timeseries import RunTS
 from obspy.clients.fdsn import Client as FDSNClient
 
 from mth5.clients.base import ClientBase
 from mth5.mth5 import MTH5
-from mth5.timeseries import RunTS
 
 
 # =============================================================================

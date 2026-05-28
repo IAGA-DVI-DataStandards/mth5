@@ -21,10 +21,10 @@ import numpy as np
 # =============================================================================
 import pytest
 from mt_metadata.common.mttime import MTime
+from mt_timeseries import ChannelTS, RunTS
 
 from mth5 import groups, helpers
 from mth5.mth5 import _default_table_names, MTH5
-from mth5.timeseries import ChannelTS, RunTS
 from mth5.utils.exceptions import MTH5Error
 
 

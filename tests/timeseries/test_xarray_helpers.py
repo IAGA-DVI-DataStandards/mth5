@@ -845,8 +845,8 @@ class TestEdgeCasesAndErrors:
             coords={"time": single_time, "variable": standard_channels},
         )
 
-        with pytest.warns(RuntimeWarning, match="Degrees of freedom"):
-            S = covariance_xr(xr_data)
+        # covariance_xr returns all-NaN for < 2 time samples without raising warnings
+        S = covariance_xr(xr_data)
 
         assert S.shape == (len(standard_channels), len(standard_channels))
         # With single point, covariance will be NaN due to degrees of freedom

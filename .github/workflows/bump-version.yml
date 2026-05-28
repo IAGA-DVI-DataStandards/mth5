@@ -10,6 +10,9 @@ permissions:
   contents: write
   pull-requests: write
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
   bump-version:
     # Run only when a release label is added to an open PR
@@ -23,23 +26,40 @@ jobs:
 
     steps:
       - name: Check out PR branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.2
         with:
           ref: ${{ github.head_ref }}
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6.2.0
         with:
           python-version: "3.13"
 
       - name: Install tools
         run: |
-          pip install bump-my-version pandoc
+          pip install bump-my-version
           sudo apt-get update
           sudo apt-get install -y pandoc
-          cargo install git-cliff
+
+      - name: Install git-cliff binary
+        run: |
+          GIT_CLIFF_VERSION="2.12.0"
+          ARCH="$(uname -m)"
+          if [ "$ARCH" = "x86_64" ]; then
+            TARGET="x86_64-unknown-linux-gnu"
+          elif [ "$ARCH" = "aarch64" ]; then
+            TARGET="aarch64-unknown-linux-gnu"
+          else
+            echo "Unsupported architecture: $ARCH"
+            exit 1
+          fi
+
+          curl -sSL -o git-cliff.tar.gz "https://github.com/orhun/git-cliff/releases/download/v${GIT_CLIFF_VERSION}/git-cliff-${GIT_CLIFF_VERSION}-${TARGET}.tar.gz"
+          tar -xzf git-cliff.tar.gz
+          sudo install -m 755 "git-cliff-${GIT_CLIFF_VERSION}/git-cliff" /usr/local/bin/git-cliff
+          git cliff --version
 
       - name: Set up Git user
         run: |
@@ -65,7 +85,7 @@ jobs:
       - name: Extract version
         id: version
         run: |
-          VERSION=$(bump-my-version show current)
+          VERSION=$(grep '^version = ' pyproject.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
           echo "Extracted version: $VERSION"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
@@ -97,7 +117,7 @@ jobs:
           git push origin HEAD:${{ github.head_ref }}
 
       - name: Add comment to PR
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9.0.0
         with:
           script: |
             github.rest.issues.createComment({

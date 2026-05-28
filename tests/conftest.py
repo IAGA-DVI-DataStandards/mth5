@@ -95,6 +95,14 @@ MTH5_TYPES = {
             target_folder=folder, file_version="0.1.0", force_make_mth5=True
         ),
     },
+    "test1_fcs": {
+        "cache_name": "test1_fcs_global.h5",
+        "create_func": lambda folder: _create_mth5_with_fcs(folder, "test1"),
+    },
+    "test12rr_fcs": {
+        "cache_name": "test12rr_fcs_global.h5",
+        "create_func": lambda folder: _create_mth5_with_fcs(folder, "test12rr"),
+    },
     "fdsn_miniseed_v010": {
         "cache_name": "fdsn_cas04_v010_global.h5",
         "create_func": lambda folder: _create_fdsn_miniseed_mth5(
@@ -147,6 +155,19 @@ def _create_fdsn_miniseed_mth5(folder, version="0.1.0"):
     return created_file
 
 
+def _create_mth5_with_fcs(folder, base_type):
+    """Create an MTH5 file with Fourier coefficients from an existing base cache."""
+    base_cache_path = ensure_global_cache_exists(base_type)
+    target_path = Path(folder) / f"{base_type}_with_fcs.h5"
+    shutil.copy2(base_cache_path, target_path)
+
+    with MTH5() as m:
+        m.open_mth5(target_path, mode="a")
+        add_fcs_to_mth5(m, fc_decimations=None)
+
+    return target_path
+
+
 def ensure_global_cache_exists(mth5_type):
     """Ensure global cache exists for the specified MTH5 type."""
     if mth5_type not in MTH5_TYPES:
@@ -186,8 +207,15 @@ def create_session_mth5_file(mth5_type, with_fcs=False):
 
     Returns a unique copy from the global cache for use during the test session.
     """
+    # Prefer precomputed FC caches when available to avoid per-session FC recompute.
+    cache_type = (
+        f"{mth5_type}_fcs"
+        if with_fcs and f"{mth5_type}_fcs" in MTH5_TYPES
+        else mth5_type
+    )
+
     # Ensure global cache exists
-    global_cache_path = ensure_global_cache_exists(mth5_type)
+    global_cache_path = ensure_global_cache_exists(cache_type)
 
     # Create unique session file
     session_dir = tempfile.mkdtemp(prefix=f"mth5_session_{mth5_type}_")
@@ -197,8 +225,8 @@ def create_session_mth5_file(mth5_type, with_fcs=False):
     # Copy from global cache
     shutil.copy2(global_cache_path, session_file)
 
-    # Add Fourier coefficients if requested
-    if with_fcs:
+    # Fallback for types that do not define a dedicated _fcs cache.
+    if with_fcs and cache_type == mth5_type:
         logger.debug(f"Adding Fourier coefficients to {session_file}")
         with MTH5() as m:
             m.open_mth5(session_file, mode="a")
@@ -347,6 +375,30 @@ def fresh_test1_mth5(global_test1_mth5):
 
 
 @pytest.fixture
+def fresh_test1_mth5_with_fcs(global_test1_mth5_with_fcs):
+    """
+    Function-scoped fixture providing a fresh copy of test1 MTH5 file with FCs.
+
+    Use this fixture when your test needs FC data and modifies the file.
+    """
+    temp_dir = tempfile.mkdtemp()
+    unique_id = str(uuid.uuid4())[:8]
+    fresh_file = Path(temp_dir) / f"test1_fcs_fresh_{unique_id}.h5"
+
+    shutil.copy2(global_test1_mth5_with_fcs, fresh_file)
+
+    yield fresh_file
+
+    # Cleanup
+    close_open_files()
+    try:
+        fresh_file.unlink()
+        fresh_file.parent.rmdir()
+    except (OSError, PermissionError):
+        pass
+
+
+@pytest.fixture
 def fresh_test12rr_mth5(global_test12rr_mth5):
     """
     Function-scoped fixture providing a fresh copy of test12rr MTH5 file.
@@ -409,6 +461,8 @@ def pytest_sessionstart(session):
     try:
         ensure_global_cache_exists("test1")
         ensure_global_cache_exists("test12rr")
+        ensure_global_cache_exists("test1_fcs")
+        ensure_global_cache_exists("test12rr_fcs")
         logger.info("Global cache pre-population completed successfully")
     except Exception as e:
         logger.warning(f"Failed to pre-populate global cache: {e}")

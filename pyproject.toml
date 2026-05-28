@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mth5"
-version = "0.6.5"
+version = "0.6.7"
 description = "Archivable and exchangeable format for magnetotelluric data"
 authors = [
     {name = "Jared Peacock", email = "jpeacock@usgs.gov"},
@@ -32,6 +32,8 @@ dependencies = [
     "pyyaml",
     "scipy",
     "mt_metadata>=1.0.0",
+    "mt_timeseries>=0.0.2",
+    "mt-io>=0.0.3",
 ]
 
 [project.urls]
@@ -89,7 +91,9 @@ mth5 = [
 markers = [
     "performance: mark test as performance test",
     "integration: mark test as integration test",
-    "slow: mark test as slow running"
+    "slow: mark test as slow running",
+    "fast: mark test as fast running",
+    "benchmark: mark test as a benchmark (requires pytest-benchmark)"
 ]
 addopts = "--ignore=setup.py"
 testpaths = ["tests"]
@@ -125,7 +129,7 @@ use_parentheses = true
 ensure_newline_before_comments = true
 
 [tool.bumpversion]
-current_version = "0.6.5"
+current_version = "0.6.7"
 commit = true
 tag = true
 
