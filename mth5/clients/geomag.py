@@ -457,6 +457,7 @@ class GeomagClient:
         df_list = []
 
         for interval in self.get_chunks():
+            logger.info("Requesting data from USGS Geogmag...")
             request_num = 0
             has_nan = False
             while request_num <= request_max:
