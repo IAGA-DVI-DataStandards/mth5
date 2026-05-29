@@ -349,9 +349,9 @@ class IntermagClient:
             except ValueError:
                 raise ValueError(f"{value} must be able to convert to an integer.")
 
-        if not isinstance(value, (int, float)):
+        if not isinstance(value, (int)):
             raise TypeError(
-                f"{value} must be an integer or float not type({type(value)}"
+                f"{value} must be an integer not type({type(value)}"
             )
 
         if value not in self._valid_sampling_periods:

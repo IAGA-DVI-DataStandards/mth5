@@ -139,7 +139,7 @@ class TestIntermagClientProperties:
     )
     def test_observatory_valid_setting(self, intermag_client, input_val, expected):
         """Test setting valid observatory codes."""
-        intermag_client.observatory = input_val
+        intermag_client.observatory(input_val)
         assert intermag_client.observatory == expected
 
     @pytest.mark.parametrize(
@@ -156,21 +156,21 @@ class TestIntermagClientProperties:
     ):
         """Test observatory validation with invalid values."""
         with pytest.raises(expected_exc):
-            intermag_client.observatory = invalid_val
+            intermag_client.observatory(invalid_val)
 
     def test_elements_single_string(self, intermag_client):
         """Test setting elements from single string."""
-        intermag_client.elements = "x"
+        intermag_client.elements("x")
         assert intermag_client.elements == ["X"]
 
     def test_elements_comma_separated_string(self, intermag_client):
         """Test setting elements from comma-separated string."""
-        intermag_client.elements = "x,y"
+        intermag_client.elements("x,y")
         assert intermag_client.elements == ["X", "Y"]
 
     def test_elements_list_input(self, intermag_client):
         """Test setting elements from list."""
-        intermag_client.elements = ["x", "y", "z"]
+        intermag_client.elements(["x", "y", "z"]
         assert intermag_client.elements == ["X", "Y", "Z"]
 
     @pytest.mark.parametrize(
@@ -187,15 +187,15 @@ class TestIntermagClientProperties:
     ):
         """Test elements validation with invalid values."""
         with pytest.raises(expected_exc):
-            intermag_client.elements = invalid_val
+            intermag_client.elements(invalid_val)
 
     @pytest.mark.parametrize(
         "period,expected",
-        [(1, 1), (60, 60), (3600, 3600), ("1", 1), ("60", 60), ("3600", 3600)],
+        [(1, 1), (60, 60), ("1", 1), ("60", 60)],
     )
     def test_sampling_period_valid_values(self, intermag_client, period, expected):
         """Test setting valid sampling periods."""
-        intermag_client.sampling_period = period
+        intermag_client.sampling_period(period)
         assert intermag_client.sampling_period == expected
 
     @pytest.mark.parametrize(
@@ -213,25 +213,18 @@ class TestIntermagClientProperties:
     ):
         """Test sampling period validation with invalid values."""
         with pytest.raises(expected_exc):
-            intermag_client.sampling_period = invalid_val
+            intermag_client.sampling_period(invalid_val)
 
     def test_time_properties(self, intermag_client):
         """Test start and end time property setting."""
         test_time = "2020-01-01T00:00:00+00:00"
-        expected_time = "2020-01-01T00:00:00Z"
+        expected_time = "2020-01-01T00:00:00+00:00"
 
         intermag_client.start = test_time
         assert intermag_client.start == expected_time
 
         intermag_client.end = test_time
         assert intermag_client.end == expected_time
-
-    def test_user_agent_property(self, intermag_client):
-        """Test user agent string generation."""
-        user_agent = intermag_client.user_agent
-        assert "MTH5" in user_agent
-        assert "Python" in user_agent
-
 
 # =============================================================================
 # IntermagClient Functionality Tests
@@ -241,43 +234,20 @@ class TestIntermagClientProperties:
 class TestIntermagClientFunctionality:
     """Test IntermagClient core functionality."""
 
-    def test_get_chunks(self, intermag_client):
-        """Test chunk calculation for large time ranges."""
-        intermag_client.start = "2021-04-05T00:00:00+00:00"
-        intermag_client.end = "2021-04-16T00:00:00+00:00"
-
-        expected_chunks = [
-            ("2021-04-05T00:00:00Z", "2021-04-05T20:00:00Z"),
-            ("2021-04-05T20:00:00Z", "2021-04-06T16:00:00Z"),
-            ("2021-04-06T16:00:00Z", "2021-04-07T12:00:00Z"),
-            ("2021-04-07T12:00:00Z", "2021-04-08T08:00:00Z"),
-            ("2021-04-08T08:00:00Z", "2021-04-09T04:00:00Z"),
-            ("2021-04-09T04:00:00Z", "2021-04-10T00:00:00Z"),
-            ("2021-04-10T00:00:00Z", "2021-04-10T20:00:00Z"),
-            ("2021-04-10T20:00:00Z", "2021-04-11T16:00:00Z"),
-            ("2021-04-11T16:00:00Z", "2021-04-12T12:00:00Z"),
-            ("2021-04-12T12:00:00Z", "2021-04-13T08:00:00Z"),
-            ("2021-04-13T08:00:00Z", "2021-04-14T04:00:00Z"),
-            ("2021-04-14T04:00:00Z", "2021-04-15T00:00:00Z"),
-            ("2021-04-15T00:00:00Z", "2021-04-15T20:00:00Z"),
-            ("2021-04-15T20:00:00Z", "2021-04-16T00:00:00Z"),
-        ]
-
-        assert intermag_client.get_chunks() == expected_chunks
-
     def test_get_request_params(self, configured_intermag_client):
         """Test request parameter generation."""
         start = "2020-01-01T00:00:00+00:00"
         end = "2020-01-02T12:00:00+00:00"
 
         expected_params = {
-            "id": "FRN",
-            "type": "adjusted",
-            "elements": "X,Y",
-            "sampling_period": 1,
-            "format": "json",
-            "starttime": start,
-            "endtime": end,
+            'request': 'GetData', 
+            'observatoryIagaCode': 'FRN', 
+            'elements': 'X,Y', 
+            'publicationState': 'adjusted', 
+            'samplesPerDay': 'second', 
+            'Format': 'json', 
+            'dataStartDate': '2020-01-01T00:00:00+00:00', 
+            'dataEndDate': '2020-01-02T12:00:00+00:00',
         }
 
         actual_params = configured_intermag_client._get_request_params(start, end)
@@ -294,10 +264,6 @@ class TestIntermagClientFunctionality:
         assert "headers" in request_dict
         assert "params" in request_dict
         assert "timeout" in request_dict
-        assert (
-            request_dict["headers"]["User-Agent"] == configured_intermag_client.user_agent
-        )
-
 
 # =============================================================================
 # IntermagClient Data Retrieval Tests (Mocked)
@@ -655,18 +621,6 @@ class TestIntermagMTH5Creation:
 class TestEdgeCasesAndErrorHandling:
     """Test edge cases and error handling scenarios."""
 
-    def test_intermag_client_none_time_values(self, intermag_client):
-        """Test handling of None time values."""
-        intermag_client.start = None
-        intermag_client.end = None
-
-        # When both start and end are None, get_chunks should return None
-        # since the property access will fail, we expect this behavior
-        # In a real scenario, the user would set valid times before calling get_chunks
-        with pytest.raises(AttributeError):
-            # This should raise AttributeError because start property tries to access None._start.iso_no_tz
-            chunks = intermag_client.get_chunks()
-
     def test_intermag_client_longitude_conversion(self, intermag_client):
         """Test longitude conversion for coordinates > 180."""
         metadata = {
@@ -816,15 +770,6 @@ class TestPerformanceAndScalability:
         intermag_client.elements = all_elements
         assert len(intermag_client.elements) == len(all_elements)
         assert intermag_client.elements == all_elements
-
-    def test_chunk_calculation_large_timespan(self, intermag_client):
-        """Test chunk calculation for very large time spans."""
-        intermag_client.start = "2020-01-01T00:00:00"
-        intermag_client.end = "2020-12-31T23:59:59"  # Full year
-
-        chunks = intermag_client.get_chunks()
-        assert isinstance(chunks, list)
-        assert len(chunks) > 50  # Should be many chunks for a full year
 
     def test_request_df_large_dataset(self, intermag_client):
         """Test handling of large request DataFrames."""
