@@ -170,7 +170,7 @@ class TestIntermagClientProperties:
 
     def test_elements_list_input(self, intermag_client):
         """Test setting elements from list."""
-        intermag_client.elements(["x", "y", "z"]
+        intermag_client.elements(["x", "y", "z"])
         assert intermag_client.elements == ["X", "Y", "Z"]
 
     @pytest.mark.parametrize(
