@@ -9,7 +9,7 @@ import json
 import platform
 import sys
 from pathlib import Path
-from deprecated import deprecated
+# from deprecated import deprecated
 
 from loguru import logger
 
@@ -32,7 +32,7 @@ from mth5.mth5 import MTH5
 
 "https://geomag.usgs.gov/ws/data/?id=FRN&type=adjusted&elements=H&sampling_period=1&format=json&starttime=2020-06-02T19:00:00Z&endtime=2020-06-02T22:07:46Z"
 
-@deprecated(reason="This class is deprecated. Please use Intermag instead.")
+# @deprecated(reason="This class is deprecated. Please use Intermag instead.")
 class GeomagClient:
     """
     Get geomagnetic data from observatories.
@@ -534,7 +534,7 @@ class GeomagClient:
             survey_metadata=survey_metadata,
         )
 
-@deprecated(reason="Deprecated, use Intermag for faster reading and more options")
+#@deprecated(reason="Deprecated, use Intermag for faster reading and more options")
 class USGSGeomag:
     def __init__(self, **kwargs):
         self.save_path = Path().cwd()
