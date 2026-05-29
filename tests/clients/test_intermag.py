@@ -711,7 +711,7 @@ class TestEdgeCasesAndErrorHandling:
 class TestIntegrationMocked:
     """Integration-style tests with comprehensive mocking."""
 
-     def test_full_workflow_single_request(self, mock_get, mock_http_response):
+    def test_full_workflow_single_request(self, mock_get, mock_http_response):
         """Test complete workflow for single data request."""
         mock_get.return_value = mock_http_response
 
