@@ -1,17 +1,14 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Nov 14 13:58:44 2022
+Created on Fri Apr 17 18:02:38 2026
 
-@author: jpeacock
+@author: jpopelar
 """
 
 import json
 import platform
 import sys
 from pathlib import Path
-# from deprecated import deprecated
-
-from loguru import logger
 
 import numpy as np
 import pandas as pd
@@ -22,18 +19,18 @@ import pandas as pd
 import requests
 from mt_metadata.common.mttime import MTime
 from mt_metadata.timeseries import Magnetic, Run, Station, Survey
-from mt_timeseries import ChannelTS, RunTS
 
 from mth5 import __version__ as mth5_version
 from mth5.mth5 import MTH5
+from mth5.timeseries import ChannelTS, RunTS
 
 
 # =============================================================================
 
 "https://geomag.usgs.gov/ws/data/?id=FRN&type=adjusted&elements=H&sampling_period=1&format=json&starttime=2020-06-02T19:00:00Z&endtime=2020-06-02T22:07:46Z"
 
-# @deprecated(reason="This class is deprecated. Please use Intermag instead.")
-class GeomagClient:
+
+class IntermagClient:
     """
     Get geomagnetic data from observatories.
 
@@ -46,53 +43,175 @@ class GeomagClient:
     - **elements**: components to get
     - **sampling_period**: samples between measurements in seconds
     - **format**: JSON or IAGA2002
-
+    
+    Use this URL base as an example
+    'https://imag-data.bgs.ac.uk/GIN_V1/GINServices?request=GetData&observatoryIagaCode=WIC&dataStartDate=2021-03-10T00:00:00Z&dataEndDate=2021-03-11T23:59:59Z&Format=iaga2002&elements=&publicationState=adj-or-rep&samplesPerDay=minute'
+    https://wdcapi.bgs.ac.uk/data/text-data/day/{obs-name}
     .. seealso:: https://www.usgs.gov/tools/web-service-geomagnetism-data
 
     """
 
     def __init__(self, **kwargs):
-        self._base_url = r"https://geomag.usgs.gov/ws/data/"
+        self._base_url = r"https://imag-data.bgs.ac.uk/GIN_V1/GINServices"
         self._timeout = 120
 
         self._valid_observatories = [
-            "BDT",
+            "AAE",
+            "ABG",
+            "ABK",
+            "AIA",
+            "ALE",
+            "AMS",
+            "API",
+            "AQU",
+            "ARS",
+            "ASC",
+            "ASP",
+            "BDV",
+            "BEL",
+            "BFE",
+            "BFO",
+            "BLC",
+            "BMT",
+            "BNG",
             "BOU",
-            "TST",
+            "BOX",
+            "BRD",
             "BRW",
-            "BRT",
             "BSL",
+            "CBB",
+            "CKI",
+            "CLF",
             "CMO",
-            "CMT",
+            "CNB",
+            "CNH",
+            "CPL",
+            "CSY",
+            "CTA",
+            "CYG",
+            "CZT",
             "DED",
-            "DHT",
+            "DLR",
+            "DLT",
+            "DMC",
+            "DOU",
+            "DRV",
+            "DUR",
+            "EBR",
+            "ESK",
+            "EYR",
+            "FCC",
             "FRD",
             "FRN",
+            "FUR",
+            "GAN",
+            "GCK",
+            "GDH",
+            "GLN",
+            "GNA",
+            "GNG",
             "GUA",
+            "GUI",
+            "GZH",
+            "HAD",
+            "HBK",
+            "HER",
+            "HLP",
             "HON",
+            "HRB",
+            "HRN",
+            "HUA",
+            "HYB",
+            "IPM",
+            "IQA",
+            "IRT",
+            "ISK",
+            "IZN",
+            "JAI",
+            "JCO",
+            "KAK",
+            "KDU",
+            "KEP",
+            "KHB",
+            "KIR",
+            "KIV",
+            "KMH",
+            "KNY",
+            "KOU",
+            "LER",
+            "LNP",
+            "LON",
+            "LOV",
+            "LRM",
+            "LVV",
+            "LYC",
+            "LZH",
+            "MAB",
+            "MAW",
+            "MBC",
+            "MBO",
+            "MCQ",
+            "MEA",
+            "MGD",
+            "MID",
+            "MLT",
+            "MMB",
+            "MZL",
+            "NAQ",
+            "NCK",
             "NEW",
+            "NGK",
+            "NUR",
+            "NVS",
+            "ORC",
+            "OTT",
+            "PAF",
+            "PAG",
+            "PBQ",
+            "PEG",
+            "PET",
+            "PHU",
+            "PIL",
+            "PPT",
+            "PST",
+            "QSB",
+            "RES",
+            "REU",
+            "SBA",
+            "SBL",
+            "SFS",
+            "SHE",
             "SHU",
             "SIT",
             "SJG",
-            "TUC",
-            "USGS",
-            "BLC",
-            "BRD",
-            "CBB",
-            "EUA",
-            "FCC",
-            "IQA",
-            "MEA",
-            "OTT",
-            "RES",
-            "SNK",
+            "SOD",
+            "SPG",
+            "SPT",
             "STJ",
+            "STT",
+            "SUA",
+            "TAM",
+            "TAN",
+            "TDC",
+            "THL",
+            "THY",
+            "TIK",
+            "TSU",
+            "TTB",
+            "TUC",
+            "UPS",
+            "VAL",
             "VIC",
+            "VNA",
+            "VOS",
+            "VSS",
+            "WIC",
+            "WMQ",
+            "WNG",
+            "YAK",
             "YKC",
-            "HAD",
-            "HER",
-            "KAK",
-        ]
+]
+
 
         self._valid_elements = [
             "D",
@@ -117,11 +236,12 @@ class GeomagClient:
 
         self._ch_map = {"x": "hx", "y": "hy", "z": "hz"}
 
-        self._valid_sampling_periods = [1, 60, 3600]
+        self._valid_sampling_periods = [1, 60]
         self._valid_output_formats = ["json", "iaga2002"]
 
         self.type = "adjusted"
         self.sampling_period = 1
+        self.samples_per_day = "second"
         self.elements = ["x", "y"]
         self.format = "json"
         self._timeout = 120
@@ -169,7 +289,7 @@ class GeomagClient:
         if value not in self._valid_observatories:
             raise ValueError(
                 f"{value} not in accepted observatories see "
-                "https://www.usgs.gov/tools/web-service-geomagnetism-data "
+                "https://imag-data.bgs.ac.uk/GIN_V1/GINForms2?observatoryIagaCode=AAE&publicationState=Best+available&dataStartDate=2026-04-16&dataDuration=1&samplesPerDay=minute&submitValue=Observatory+Details&request=DataView "
                 "for more information."
             )
 
@@ -229,15 +349,16 @@ class GeomagClient:
             except ValueError:
                 raise ValueError(f"{value} must be able to convert to an integer.")
 
-        if not isinstance(value, (int, float)):
+        if not isinstance(value, (int)):
             raise TypeError(
-                f"{value} must be an integer or float not type({type(value)}"
+                f"{value} must be an integer not type({type(value)}"
             )
 
         if value not in self._valid_sampling_periods:
-            raise ValueError(f"{value} must be in [1, 60, 3600]")
+            raise ValueError(f"{value} must be in [1, 60]")
 
         self._sampling_period = value
+        self.samples_per_day = "second" if value == 1 else "minute"
 
     @property
     def start(self):
@@ -261,44 +382,6 @@ class GeomagClient:
         else:
             self._end = MTime(time_stamp=value)
 
-    def get_chunks(self):
-        """
-        Get the number of chunks of allowable sized to request, includes the elements
-
-        So the max length is the maximum time period that can be requested but includes
-        the number of elements in the request.  So if the max length is 172800 seconds
-        and the sampling period is 1 second, then the maximum number of elements that can
-        be requested is 172800 / (1 * len(elements)).
-
-        :return: DESCRIPTION
-        :rtype: TYPE
-
-        """
-
-        if self.start is not None and self.end is not None:
-            dt = np.arange(
-                np.datetime64(self._start.iso_no_tz),
-                np.datetime64(self._end.iso_no_tz),
-                np.timedelta64(
-                    int(
-                        (round(self._max_length / len(self.elements)))
-                        * self.sampling_period
-                    ),
-                    "s",
-                ),
-            )
-            dt = np.append(dt, np.array([np.datetime64(self._end.iso_no_tz)]))
-
-            dt_request = [
-                (
-                    f"{MTime(time_stamp=dt[ii]).iso_no_tz}Z",
-                    f"{MTime(time_stamp=dt[ii + 1]).iso_no_tz}Z",
-                )
-                for ii in range(len(dt) - 1)
-            ]
-
-            return dt_request
-
     def _get_request_params(self, start, end):
         """
         Get request parameters
@@ -312,13 +395,14 @@ class GeomagClient:
 
         """
         return {
-            "id": self.observatory,
-            "type": self.type,
+            "request": "GetData",
+            "observatoryIagaCode": self.observatory,
             "elements": ",".join(self.elements),
-            "sampling_period": self.sampling_period,
-            "format": "json",
-            "starttime": start,
-            "endtime": end,
+            "publicationState": self.type,
+            "samplesPerDay": self.samples_per_day,
+            "Format": "json",
+            "dataStartDate": start,
+            "dataEndDate": end,
         }
 
     def _get_request_dictionary(self, start, end):
@@ -366,81 +450,18 @@ class GeomagClient:
         """
 
         sm = Station()
-        sm.id = request_metadata["intermagnet"]["imo"]["name"]
-        sm.fdsn.id = request_metadata["intermagnet"]["imo"]["iaga_code"]
+        sm.id = request_metadata["station_name"].split(",")[0].strip()
+        sm.fdsn.id = request_metadata["iaga_code"]
 
-        coords = request_metadata["intermagnet"]["imo"]["coordinates"]
-
-        if coords[0] > 180:
-            sm.location.longitude = coords[0] - 360
-        else:
-            sm.location.longitude = coords[0]
-        sm.location.latitude = coords[1]
-        sm.location.elevation = coords[2]
-        sm.provenance.creation_time = request_metadata["generated"]
+        long = request_metadata["longitude"]
+        sm.location.longitude = long - 360 if long > 180 else long
+        sm.location.latitude = request_metadata["latitude"]
+        sm.location.elevation = request_metadata["altitude"]
+        # sm.provenance.creation_time = request_metadata["generated"]
 
         return sm
 
-    def _get_station_metadata(self, interval):
-        """
-        get station metadata from request json
-
-        :param request_json: DESCRIPTION
-        :type request_json: TYPE
-        :return: DESCRIPTION
-        :rtype: TYPE
-
-        """
-        request_obj = self._request_data(
-            self._get_request_dictionary(interval[0], interval[1])
-        )
-
-        if request_obj.status_code == 200:
-            request_json = json.loads(request_obj.content)
-            return self._to_station_metadata(request_json["metadata"])
-        else:
-            raise IOError(
-                "Could not connect to server. Error code: " f"{request_obj.status_code}"
-            )
-
-    def _get_interval_data(self, interval):
-        """
-        get data for a given interval
-
-        :param interval: DESCRIPTION
-        :type interval: TYPE
-        :return: DESCRIPTION
-        :rtype: TYPE
-
-        """
-
-        request_obj = self._request_data(
-            self._get_request_dictionary(interval[0], interval[1])
-        )
-
-        if request_obj.status_code == 200:
-            request_json = json.loads(request_obj.content)
-
-            request_df = pd.DataFrame(
-                dict(
-                    [
-                        (
-                            element["metadata"]["element"].lower(),
-                            np.array(element["values"], dtype=float),
-                        )
-                        for element in request_json["values"]
-                    ]
-                ),
-                index=request_json["times"],
-            )
-            return request_df
-
-        else:
-            raise IOError(
-                "Could not connect to server. Error code: " f"{request_obj.status_code}"
-            )
-
-    def get_data(self, run_id="001", request_max=5):
+    def get_data(self, run_id="001"):
         """
         Get data from geomag client at USGS based on the request.  This might
         have to be done in chunks depending on the request size.  The returned
@@ -455,52 +476,40 @@ class GeomagClient:
         :rtype: TYPE
 
         """
-
-        df_list = []
-
-        for interval in self.get_chunks():
-            logger.debug(f"Requesting data from USGS Geogmag for interval {interval}")
-            request_num = 0
-            has_nan = False
-            while request_num <= request_max:
-                request_num += 1
-                request_df = self._get_interval_data(interval)
-                has_nan = request_df.isna().sum().to_numpy().any()
-                if has_nan:
-                    for col in request_df.columns:
-                        nan_count = request_df[col].isna().sum()
-                        if nan_count > 0:
-                            logger.warning(
-                                f"Found {nan_count} NaN values in {col} for "
-                                f"{interval[0]} to {interval[1]}. Retrying request"
-                            )
-                    if request_num < request_max:
-                        continue
-                    else:
-                        logger.warning(
-                            f"Reached maximum number of requests ({request_max}) for interval "
-                            f"{interval[0]} to {interval[1]} with NaN values. "
-                            "Proceeding with NaN values in data."
-                        )
-
-                    df_list.append(request_df)
-                    break
-                else:
-                    df_list.append(request_df)
-                    break
-
-        survey_metadata = Survey(id="USGS-GEOMAG")
-        station_metadata = self._get_station_metadata(interval)
+        ch = dict([(c.lower(), []) for c in self.elements])
+        
+        request_obj = self._request_data(
+            self._get_request_dictionary(
+                np.datetime64(self._start.iso_no_tz), 
+                np.datetime64(self._end.iso_no_tz)
+            )
+        )
+        if request_obj.status_code == 200:
+            request_json = json.loads(request_obj.content)
+            for element in self.elements:
+                ch[element.lower()].append(
+                    pd.DataFrame(
+                        {
+                            "data": request_json[element],
+                        },
+                        index=request_json["datetime"],
+                    )
+                )
+        else:
+            raise IOError(
+                "Could not connect to server. Error code: "
+                f"{request_obj.status_code}"
+            )
+            
+        survey_metadata = Survey(id="INTERMAG")
+        station_metadata = self._to_station_metadata(request_json["@info"])
         run_metadata = Run(id=run_id)
 
-        df = pd.concat(df_list).astype(float)
-        df.sort_index(inplace=True)
-
         ch_list = []
-
-        for col in df.columns:
+        for key, df_list in ch.items():
+            df = pd.concat(df_list).astype(float)
             ch_metadata = Magnetic()
-            ch_metadata.component = self._ch_map[col]
+            ch_metadata.component = self._ch_map[key]
             ch_metadata.sample_rate = 1.0 / self.sampling_period
             ch_metadata.units = "nanotesla"
             if "y" in ch_metadata.component:
@@ -519,7 +528,7 @@ class GeomagClient:
             ch_list.append(
                 ChannelTS(
                     channel_type="magnetic",
-                    data=df[col].values,
+                    data=df,
                     channel_metadata=ch_metadata,
                     run_metadata=run_metadata,
                     station_metadata=station_metadata,
@@ -534,8 +543,8 @@ class GeomagClient:
             survey_metadata=survey_metadata,
         )
 
-#@deprecated(reason="Deprecated, use Intermag for faster reading and more options")
-class USGSGeomag:
+
+class Intermag:
     def __init__(self, **kwargs):
         self.save_path = Path().cwd()
         self.mth5_filename = None
@@ -654,7 +663,7 @@ class USGSGeomag:
 
         Create filename from the information in the dataframe
 
-        The filename will look like f"usgs_geomag_{obs}_{elements}.h5"
+        The filename will look like f"intermag_{obs}_{elements}.h5"
 
         :param request_df: request dataframe
         :type request_df: :class:`pandas.DataFrame`
@@ -668,12 +677,12 @@ class USGSGeomag:
 
         save_path = Path(save_path)
         if save_path.is_dir():
-            fn = f"usgs_geomag_{obs}_{elements}.h5"
+            fn = f"intermag_{obs}_{elements}.h5"
             save_path = save_path.joinpath(fn)
 
         return save_path
 
-    def make_mth5_from_geomag(self, request_df):
+    def make_mth5_from_intermag(self, request_df):
         """
         Download geomagnetic observatory data from USGS webservices into an
         MTH5 using a request dataframe or csv file.
@@ -707,16 +716,16 @@ class USGSGeomag:
 
             if self.mth5_version in ["0.1.0"]:
                 survey_group = m.survey_group
-                survey_group.metadata.id = "USGS-GEOMAG"
+                survey_group.metadata.id = "INTERMAG"
             elif self.mth5_version in ["0.2.0"]:
-                survey_group = m.add_survey("USGS-GEOMAG")
+                survey_group = m.add_survey("INTERMAG")
             else:
                 raise ValueError(
                     f"MTH5 version must be [ '0.1.0' | '0.2.0' ] not {self.mth5_version}"
                 )
 
             for row in request_df.itertuples():
-                geomag_client = GeomagClient(
+                intermag_client = IntermagClient(
                     observatory=row.observatory,
                     type=row.type,
                     elements=row.elements,
@@ -725,8 +734,7 @@ class USGSGeomag:
                     sampling_period=row.sampling_period,
                     **{"_ch_map": {"x": "hx", "y": "hy", "z": "hz"}},
                 )
-
-                run = geomag_client.get_data(run_id=row.run)
+                run = intermag_client.get_data(run_id=row.run)
                 station_group = survey_group.stations_group.add_station(
                     run.station_metadata.id,
                     station_metadata=run.station_metadata,

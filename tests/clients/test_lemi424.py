@@ -46,7 +46,7 @@ def temp_file_path(temp_data_dir):
 @pytest.fixture
 def basic_lemi_client(temp_data_dir):
     """Create a basic LEMI424Client instance for testing."""
-    return LEMI424Client(temp_data_dir, **{"h5_mode": "w", "h5_driver": "sec2"})
+    return LEMI424Client(temp_data_dir, **{"h5_mode": "a", "h5_driver": "sec2"})
 
 
 @pytest.fixture
@@ -423,7 +423,7 @@ class TestLEMI424ClientMTH5Creation:
 
         # Verify calls
         mock_mth5_instance.open_mth5.assert_called_once_with(
-            basic_lemi_client.save_path, "w"
+            basic_lemi_client.save_path, "a"
         )
         mock_mth5_instance.add_survey.assert_called_once_with("test_survey")
         mock_survey_group.stations_group.add_station.assert_called_once_with(

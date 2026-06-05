@@ -117,7 +117,7 @@ class TestLEMI417ClientMTH5Creation:
             assert basic_client.collection.station_id == "station_in"
 
         with subtests.test("open and survey creation"):
-            mock_mth5.open_mth5.assert_called_once_with(basic_client.save_path, "w")
+            mock_mth5.open_mth5.assert_called_once_with(basic_client.save_path, "a")
             mock_mth5.add_survey.assert_called_once_with("survey_in")
 
         with subtests.test("reader call includes file type and calibration"):
@@ -143,7 +143,7 @@ class TestLEMI417ClientMTH5Creation:
         "kwargs_in, expected_mode",
         [
             ({"mth5_file_mode": "a"}, "a"),
-            ({"mth5_file_mode": None}, "w"),
+            ({"mth5_file_mode": None}, "a"),
         ],
     )
     @patch("mth5.clients.lemi417.read_file")
