@@ -1,5 +1,5 @@
 {
-    "python.defaultInterpreterPath": "C:/Users/peaco/miniconda3/envs/py311/python.exe",
+    "python.defaultInterpreterPath": "c:\\Users\\jpeacock\\AppData\\Local\\miniforge3\\envs\\py313\\python.exe",
     "python.terminal.activateEnvironment": true,
     "python.debugging.justMyCode": true,
     "python.testing.pytestEnabled": true,

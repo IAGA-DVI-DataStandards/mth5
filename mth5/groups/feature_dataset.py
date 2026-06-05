@@ -9,7 +9,7 @@ Created on Thu Mar 10 09:02:16 2022
 # Imports
 # =============================================================================
 import weakref
-from typing import Optional
+from typing import Any, Optional
 
 import h5py
 import numpy as np
@@ -18,7 +18,11 @@ from loguru import logger
 from mt_metadata.features import FeatureDecimationChannel
 from mt_timeseries.ts_helpers import make_dt_coordinates
 
-from mth5.helpers import add_attributes_to_metadata_class_pydantic, to_numpy_type
+from mth5.helpers import (
+    add_attributes_to_metadata_class_pydantic,
+    read_attrs_to_dict,
+    to_numpy_type,
+)
 from mth5.utils.exceptions import MTH5Error
 
 
@@ -106,11 +110,13 @@ class FeatureChannelDataset:
         self,
         dataset: h5py.Dataset,
         dataset_metadata: Optional[FeatureDecimationChannel] = None,
+        write_metadata: bool = True,
         **kwargs,
     ) -> None:
         if dataset is not None and isinstance(dataset, (h5py.Dataset)):
             self.hdf5_dataset = weakref.ref(dataset)()
         self.logger = logger
+        can_write = self._can_write()
 
         # set metadata to the appropriate class.  Standards is not a
         # Base object so should be skipped. If the class name is not
@@ -142,14 +148,11 @@ class FeatureChannelDataset:
             self.metadata.mth5_type = self._class_name
 
             # write out metadata to make sure that its in the file.
-            try:
+            if write_metadata and can_write and self._metadata_needs_write():
                 self.write_metadata()
-            except (RuntimeError, KeyError, OSError):
-                # file is read only
-                pass
 
         # if the attrs don't have the proper metadata keys yet write them
-        if not "mth5_type" in list(self.hdf5_dataset.attrs.keys()):
+        if not "mth5_type" in list(self.hdf5_dataset.attrs.keys()) and can_write:
             self.write_metadata()
 
     def __str__(self) -> str:
@@ -185,6 +188,42 @@ class FeatureChannelDataset:
             Class name without the 'Dataset' suffix.
         """
         return self.__class__.__name__.split("Dataset")[0]
+
+    def _can_write(self) -> bool:
+        """Return True when the backing HDF5 file is writable."""
+        file_mode = getattr(getattr(self.hdf5_dataset, "file", None), "mode", "")
+        return "w" in file_mode or "+" in file_mode
+
+    @staticmethod
+    def _values_equal(existing_value: Any, expected_value: Any) -> bool:
+        """Compare HDF5 attribute values, including ndarray attributes."""
+        if isinstance(existing_value, np.ndarray) or isinstance(
+            expected_value, np.ndarray
+        ):
+            return np.array_equal(
+                np.asarray(existing_value), np.asarray(expected_value)
+            )
+
+        if isinstance(existing_value, np.generic):
+            existing_value = existing_value.item()
+        if isinstance(expected_value, np.generic):
+            expected_value = expected_value.item()
+
+        return existing_value == expected_value
+
+    def _metadata_needs_write(self) -> bool:
+        """Return True when metadata differs from existing dataset attrs."""
+        expected_attrs = self.metadata.to_dict()[self.metadata._class_name.lower()]
+
+        for key, value in expected_attrs.items():
+            expected_value = to_numpy_type(value)
+            if key not in self.hdf5_dataset.attrs:
+                return True
+            existing_value = self.hdf5_dataset.attrs[key]
+            if not self._values_equal(existing_value, expected_value):
+                return True
+
+        return False
 
     def read_metadata(self) -> None:
         """
@@ -223,10 +262,18 @@ class FeatureChannelDataset:
         >>> feature.metadata.component = 'Ey'
         >>> feature.write_metadata()
         """
+        if not self._can_write():
+            return
+
         meta_dict = self.metadata.to_dict()[self.metadata._class_name.lower()]
         for key, value in meta_dict.items():
             value = to_numpy_type(value)
-            self.hdf5_dataset.attrs.create(key, value)
+            if key in self.hdf5_dataset.attrs:
+                if self._values_equal(self.hdf5_dataset.attrs[key], value):
+                    continue
+                self.hdf5_dataset.attrs.modify(key, value)
+            else:
+                self.hdf5_dataset.attrs.create(key, value)
 
     @property
     def n_windows(self) -> int:

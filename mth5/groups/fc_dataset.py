@@ -113,6 +113,7 @@ class FCChannelDataset:
         self,
         dataset: h5py.Dataset,
         dataset_metadata: FCChannel | None = None,
+        write_metadata: bool = True,
         **kwargs: Any,
     ) -> None:
         """
@@ -154,6 +155,7 @@ class FCChannelDataset:
         if dataset is not None and isinstance(dataset, (h5py.Dataset)):
             self.hdf5_dataset = weakref.ref(dataset)()
         self.logger = logger
+        can_write = self._can_write()
 
         # set metadata to the appropriate class.  Standards is not a
         # Base object so should be skipped. If the class name is not
@@ -185,14 +187,11 @@ class FCChannelDataset:
             self.metadata.mth5_type = self._class_name
 
             # write out metadata to make sure that its in the file.
-            try:
+            if write_metadata and can_write and self._metadata_needs_write():
                 self.write_metadata()
-            except (RuntimeError, KeyError, OSError):
-                # file is read only
-                pass
 
         # if the attrs don't have the proper metadata keys yet write them
-        if not "mth5_type" in list(self.hdf5_dataset.attrs.keys()):
+        if not "mth5_type" in list(self.hdf5_dataset.attrs.keys()) and can_write:
             self.write_metadata()
 
     def __str__(self) -> str:
@@ -247,6 +246,42 @@ class FCChannelDataset:
 
         """
         return self.__class__.__name__.split("Dataset")[0]
+
+    def _can_write(self) -> bool:
+        """Return True when the backing HDF5 file is writable."""
+        file_mode = getattr(getattr(self.hdf5_dataset, "file", None), "mode", "")
+        return "w" in file_mode or "+" in file_mode
+
+    @staticmethod
+    def _values_equal(existing_value: Any, expected_value: Any) -> bool:
+        """Compare HDF5 attribute values, including ndarray attributes."""
+        if isinstance(existing_value, np.ndarray) or isinstance(
+            expected_value, np.ndarray
+        ):
+            return np.array_equal(
+                np.asarray(existing_value), np.asarray(expected_value)
+            )
+
+        if isinstance(existing_value, np.generic):
+            existing_value = existing_value.item()
+        if isinstance(expected_value, np.generic):
+            expected_value = expected_value.item()
+
+        return existing_value == expected_value
+
+    def _metadata_needs_write(self) -> bool:
+        """Return True when metadata differs from existing dataset attrs."""
+        expected_attrs = self.metadata.to_dict()[self.metadata._class_name.lower()]
+
+        for key, value in expected_attrs.items():
+            expected_value = to_numpy_type(value)
+            if key not in self.hdf5_dataset.attrs:
+                return True
+            existing_value = self.hdf5_dataset.attrs[key]
+            if not self._values_equal(existing_value, expected_value):
+                return True
+
+        return False
 
     def read_metadata(self) -> None:
         """
@@ -305,10 +340,18 @@ class FCChannelDataset:
         b'Ey'
 
         """
+        if not self._can_write():
+            return
+
         meta_dict = self.metadata.to_dict()[self.metadata._class_name.lower()]
         for key, value in meta_dict.items():
             value = to_numpy_type(value)
-            self.hdf5_dataset.attrs.create(key, value)
+            if key in self.hdf5_dataset.attrs:
+                if self._values_equal(self.hdf5_dataset.attrs[key], value):
+                    continue
+                self.hdf5_dataset.attrs.modify(key, value)
+            else:
+                self.hdf5_dataset.attrs.create(key, value)
 
         # Add the mth5_type attribute that is expected by channel_summary
         if "mth5_type" not in self.hdf5_dataset.attrs:

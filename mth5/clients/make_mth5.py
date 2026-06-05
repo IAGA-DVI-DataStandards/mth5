@@ -33,6 +33,7 @@ import pandas as pd
 
 from . import (
     FDSN,
+    Intermag,
     LEMI417Client,
     LEMI424Client,
     LEMIClient,
@@ -462,6 +463,92 @@ class MakeMTH5:
         )
 
         return geomag_client.make_mth5_from_geomag(request_df)
+        
+    @classmethod
+    def from_intermag(cls, request_df: pd.DataFrame | str | Path, **kwargs):
+        """
+        Create MTH5 from INTERMAGNET observatory data.
+
+        Downloads geomagnetic observatory data from INTERMAG webservices into an
+        MTH5 file using a request DataFrame or CSV file.
+
+        Parameters
+        ----------
+        request_df : pd.DataFrame, str, or Path
+            Request definition as DataFrame or path to CSV file. Required columns:
+
+            * **observatory** : str - Observatory code (e.g., 'BOU', 'FRN')
+            * **type** : str - Data type: 'variation', 'adjusted',
+              'quasi-definitive', or 'definitive'
+            * **elements** : str - Geomagnetic elements to retrieve:
+              D, DIST, DST, E, E-E, E-N, F, G, H, SQ, SV, UK1, UK2, UK3, UK4,
+              X, Y, Z
+            * **sampling_period** : int - Sample period in seconds: 1, 60, or 3600
+            * **start** : str - Start time in YYYY-MM-DDThh:mm:ss format (UTC)
+            * **end** : str - End time in YYYY-MM-DDThh:mm:ss format (UTC)
+
+        **kwargs : dict
+            Additional keyword arguments. HDF5 parameters should be prefixed
+            with 'h5_' (e.g., h5_compression='gzip', h5_compression_opts=1).
+
+        Returns
+        -------
+        Path or MTH5
+            If interact=False (default), returns Path to created MTH5 file.
+            If interact=True, returns MTH5 object with file open.
+
+        Examples
+        --------
+        Create MTH5 from USGS Boulder observatory using DataFrame:
+
+        >>> import pandas as pd
+        >>> from mth5.clients import MakeMTH5
+        >>>
+        >>> request = pd.DataFrame([{
+        ...     'observatory': 'BOU',
+        ...     'type': 'variation',
+        ...     'elements': 'XYZF',
+        ...     'sampling_period': 1,
+        ...     'start': '2020-01-01T00:00:00',
+        ...     'end': '2020-01-02T00:00:00'
+        ... }])
+        >>>
+        >>> mth5_path = MakeMTH5.from_usgs_geomag(
+        ...     request,
+        ...     h5_compression='gzip',
+        ...     h5_compression_opts=1
+        ... )
+
+        Using CSV file:
+
+        >>> mth5_path = MakeMTH5.from_usgs_geomag('requests.csv')
+
+        Multiple observatories and periods:
+
+        >>> request = pd.DataFrame([
+        ...     {'observatory': 'BOU', 'type': 'variation',
+        ...      'elements': 'XYZF', 'sampling_period': 1,
+        ...      'start': '2020-01-01T00:00:00', 'end': '2020-01-02T00:00:00'},
+        ...     {'observatory': 'FRN', 'type': 'variation',
+        ...      'elements': 'XYZF', 'sampling_period': 60,
+        ...      'start': '2020-01-01T00:00:00', 'end': '2020-01-02T00:00:00'}
+        ... ])
+        >>> mth5_path = MakeMTH5.from_usgs_geomag(request)
+
+        See Also
+        --------
+        mt_io.usgs_geomag.USGSGeomag : USGS geomagnetic data client
+        """
+        maker = cls(**kwargs)
+        kw_dict = maker.get_h5_kwargs()
+
+        intermag_client = Intermag(
+            save_path=maker.save_path,
+            interact=maker.interact,
+            **kw_dict,
+        )
+
+        return intermag_client.make_mth5_from_intermag(request_df)
 
     @classmethod
     def from_zen(

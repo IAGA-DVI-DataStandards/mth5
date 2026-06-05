@@ -9,6 +9,7 @@ from importlib import import_module
 
 _SYMBOL_TO_MODULE = {
     "FDSN": ".fdsn",
+    "Intermag": ".intermag",
     "USGSGeomag": ".geomag",
     "PhoenixClient": ".phoenix",
     "ZenClient": ".zen",

@@ -13,6 +13,7 @@ Created on Fri May 29 15:09:48 2020
 :license:
     MIT
 """
+
 # =============================================================================
 # Imports
 # =============================================================================
@@ -23,6 +24,7 @@ import weakref
 from typing import Any, Type
 
 import h5py
+import numpy as np
 from loguru import logger
 from mt_metadata import timeseries as metadata
 from mt_metadata.base import MetadataBase
@@ -482,11 +484,23 @@ class BaseGroup:
         >>> print(base_obj.metadata.id)
         'UpdatedGroup'
         """
+        file_mode = getattr(getattr(self.hdf5_group, "file", None), "mode", "")
+        can_write = "w" in file_mode or "+" in file_mode
+
+        if not can_write:
+            self.logger.warning("File is in read-only mode, cannot write metadata.")
+            return
+
         try:
             for key, value in self.metadata.to_dict(single=True).items():
                 value = to_numpy_type(value)
+                if key in self.hdf5_group.attrs:
+                    if self._values_equal(self.hdf5_group.attrs[key], value):
+                        continue
+                    self.hdf5_group.attrs.modify(key, value)
+                else:
+                    self.hdf5_group.attrs.create(key, value)
                 self.logger.debug(f"wrote metadata {key} = {value}")
-                self.hdf5_group.attrs.create(key, value)
         except KeyError as key_error:
             if "no write intent" in str(key_error):
                 self.logger.warning("File is in read-only mode, cannot write metadata.")
@@ -497,6 +511,23 @@ class BaseGroup:
                 self.logger.warning("File is in read-only mode, cannot write metadata.")
             else:
                 raise ValueError(value_error)
+
+    @staticmethod
+    def _values_equal(existing_value: Any, expected_value: Any) -> bool:
+        """Compare HDF5 attribute values, including ndarray attributes."""
+        if isinstance(existing_value, np.ndarray) or isinstance(
+            expected_value, np.ndarray
+        ):
+            return np.array_equal(
+                np.asarray(existing_value), np.asarray(expected_value)
+            )
+
+        if isinstance(existing_value, np.generic):
+            existing_value = existing_value.item()
+        if isinstance(expected_value, np.generic):
+            expected_value = expected_value.item()
+
+        return existing_value == expected_value
 
     def initialize_group(self, **kwargs: Any) -> None:
         """
