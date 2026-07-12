@@ -21,3 +21,5 @@ dependencies:
   - pip:
     - loguru
     - mt-metadata
+    - mt-timeseries
+    - mt-io
