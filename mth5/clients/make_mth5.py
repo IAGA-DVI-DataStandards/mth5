@@ -466,7 +466,13 @@ class MakeMTH5:
         return geomag_client.make_mth5_from_geomag(request_df)
 
     @classmethod
-    def from_intermag(cls, request_df: pd.DataFrame | str | Path, **kwargs):
+    def from_intermag(
+        cls,
+        request_df: pd.DataFrame | str | Path,
+        fallback_to_hdz: bool = True,
+        baseline_declination: float | None = None,
+        **kwargs,
+    ):
         """
         Create MTH5 from INTERMAGNET observatory data.
 
@@ -488,6 +494,13 @@ class MakeMTH5:
             * **start** : str - Start time in YYYY-MM-DDThh:mm:ss format (UTC)
             * **end** : str - End time in YYYY-MM-DDThh:mm:ss format (UTC)
 
+        fallback_to_hdz : bool, default True
+            If requested X/Y data are entirely NaN, request H/D/Z and convert
+            them to X/Y/Z instead. Set False to disable this fallback.
+        baseline_declination : float, optional
+            Baseline declination in degrees east of geographic north. The
+            INTERMAGNET D element is a variation from this baseline. If
+            omitted, zero degrees is assumed.
         **kwargs : dict
             Additional keyword arguments. HDF5 parameters should be prefixed
             with 'h5_' (e.g., h5_compression='gzip', h5_compression_opts=1).
@@ -500,45 +513,32 @@ class MakeMTH5:
 
         Examples
         --------
-        Create MTH5 from USGS Boulder observatory using DataFrame:
+        Create MTH5 from INTERMAGNET Fredericksburg observatory:
 
         >>> import pandas as pd
         >>> from mth5.clients import MakeMTH5
         >>>
         >>> request = pd.DataFrame([{
-        ...     'observatory': 'BOU',
-        ...     'type': 'variation',
-        ...     'elements': 'XYZF',
+        ...     'observatory': 'FRD',
+        ...     'type': 'adjusted',
+        ...     'elements': ['X', 'Y', 'Z'],
         ...     'sampling_period': 1,
-        ...     'start': '2020-01-01T00:00:00',
-        ...     'end': '2020-01-02T00:00:00'
+        ...     'start': '2015-06-22T00:00:00',
+        ...     'end': '2015-06-23T00:00:00'
         ... }])
         >>>
-        >>> mth5_path = MakeMTH5.from_usgs_geomag(
+        >>> mth5_path = MakeMTH5.from_intermag(
         ...     request,
-        ...     h5_compression='gzip',
-        ...     h5_compression_opts=1
+        ...     baseline_declination=-10.5167,
         ... )
 
         Using CSV file:
 
-        >>> mth5_path = MakeMTH5.from_usgs_geomag('requests.csv')
-
-        Multiple observatories and periods:
-
-        >>> request = pd.DataFrame([
-        ...     {'observatory': 'BOU', 'type': 'variation',
-        ...      'elements': 'XYZF', 'sampling_period': 1,
-        ...      'start': '2020-01-01T00:00:00', 'end': '2020-01-02T00:00:00'},
-        ...     {'observatory': 'FRN', 'type': 'variation',
-        ...      'elements': 'XYZF', 'sampling_period': 60,
-        ...      'start': '2020-01-01T00:00:00', 'end': '2020-01-02T00:00:00'}
-        ... ])
-        >>> mth5_path = MakeMTH5.from_usgs_geomag(request)
+        >>> mth5_path = MakeMTH5.from_intermag('requests.csv')
 
         See Also
         --------
-        mt_io.usgs_geomag.USGSGeomag : USGS geomagnetic data client
+        mth5.clients.intermag.Intermag : INTERMAGNET geomagnetic data client
         """
         maker = cls(**kwargs)
         kw_dict = maker.get_h5_kwargs()
@@ -546,6 +546,8 @@ class MakeMTH5:
         intermag_client = Intermag(
             save_path=maker.save_path,
             interact=maker.interact,
+            fallback_to_hdz=fallback_to_hdz,
+            baseline_declination=baseline_declination,
             **kw_dict,
         )
 
