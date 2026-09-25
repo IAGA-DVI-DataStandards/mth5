@@ -10,12 +10,14 @@ import platform
 import sys
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 # =============================================================================
 # Imports
 # =============================================================================
 import requests
+from loguru import logger
 from mt_metadata.common.mttime import MTime
 from mt_metadata.timeseries import Magnetic, Run, Station, Survey
 
@@ -248,6 +250,8 @@ class IntermagClient:
         self._max_length = 144000
         self.start = None
         self.end = None
+        self.fallback_to_hdz = True
+        self.baseline_declination = None
 
         for key, value in kwargs.items():
             setattr(self, key, value)
@@ -460,50 +464,99 @@ class IntermagClient:
 
         return sm
 
+    def _get_response_json(self, elements, publication_state=None):
+        request_dictionary = self._get_request_dictionary(self.start, self.end)
+        request_dictionary["params"]["elements"] = ",".join(elements)
+        if publication_state is not None:
+            request_dictionary["params"]["publicationState"] = publication_state
+        request_obj = self._request_data(request_dictionary)
+        if request_obj.status_code != 200:
+            raise IOError(
+                "Could not connect to server. Error code: "
+                f"{request_obj.status_code}"
+            )
+        return json.loads(request_obj.content)
+
+    @staticmethod
+    def _dataframe_from_response(request_json, elements):
+        times = request_json["datetime"]
+        columns = {}
+        for element in elements:
+            values = request_json.get(element)
+            if values is None:
+                values = [np.nan] * len(times)
+            columns[element.lower()] = pd.to_numeric(values, errors="coerce")
+        return pd.DataFrame(columns, index=times)
+
+    def _fallback_to_hdz(self, request_json, request_df):
+        horizontal_elements = [
+            element.lower() for element in self.elements if element.upper() in ("X", "Y")
+        ]
+        if (
+            not self.fallback_to_hdz
+            or not horizontal_elements
+            or not request_df[horizontal_elements].isna().all().all()
+        ):
+            return request_json, request_df
+
+        logger.warning(
+            f"INTERMAGNET returned all-NaN {', '.join(horizontal_elements).upper()} "
+            f"data for {self.observatory} from {self.start} to {self.end}; "
+            "retrying with reported H, D, Z data and converting to X, Y, Z."
+        )
+        fallback_json = self._get_response_json(
+            ["H", "D", "Z"], publication_state="reported"
+        )
+        hdz_df = self._dataframe_from_response(fallback_json, ["H", "D", "Z"])
+        if hdz_df[["h", "d"]].isna().all().any():
+            logger.warning(
+                f"INTERMAGNET's reported H/D fallback also returned all-NaN "
+                f"data for {self.observatory} from {self.start} to {self.end}."
+            )
+        baseline_declination = self.baseline_declination
+        if baseline_declination is None:
+            baseline_declination = 0.0
+            logger.warning(
+                "No baseline_declination supplied; assuming 0 degrees east of "
+                "geographic north for the H, D to X, Y conversion."
+            )
+
+        if not isinstance(baseline_declination, (int, float)):
+            raise TypeError("baseline_declination must be a number of degrees or None")
+
+        declination = np.deg2rad(baseline_declination + hdz_df["d"])
+        converted_df = request_df.copy()
+        if "X" in self.elements:
+            converted_df["x"] = hdz_df["h"] * np.cos(declination)
+        if "Y" in self.elements:
+            converted_df["y"] = hdz_df["h"] * np.sin(declination)
+        if "Z" in self.elements:
+            converted_df["z"] = hdz_df["z"]
+        return fallback_json, converted_df
+
     def get_data(self, run_id="001"):
         """
-        Get data from geomag client at USGS based on the request.  This might
-        have to be done in chunks depending on the request size.  The returned
-        output is a json object, which we should turn into a ChannelTS object
+        Retrieve INTERMAGNET observations and convert them to a RunTS.
 
-        For now read into a pandas dataframe and then into a ChannelTS
-
-        In the future, if the request is large, think about writing
-        directly to an MTH5 for better efficiency.
+        If requested X/Y data are entirely NaN, retry with H/D/Z and transform
+        them to X/Y/Z. ``baseline_declination`` is degrees east of geographic
+        north; if omitted, the conversion assumes a zero-degree baseline.
 
         :return: DESCRIPTION
         :rtype: TYPE
 
         """
-        ch = dict([(c.lower(), []) for c in self.elements])
-        
-        request_obj = self._request_data(
-            self._get_request_dictionary(self.start, self.end)
-        )
-        if request_obj.status_code == 200:
-            request_json = json.loads(request_obj.content)
-            for element in self.elements:
-                ch[element.lower()].append(
-                    pd.DataFrame(
-                        {
-                            "data": request_json[element],
-                        },
-                        index=request_json["datetime"],
-                    )
-                )
-        else:
-            raise IOError(
-                "Could not connect to server. Error code: "
-                f"{request_obj.status_code}"
-            )
-            
+        request_json = self._get_response_json(self.elements)
+        data_df = self._dataframe_from_response(request_json, self.elements)
+        request_json, data_df = self._fallback_to_hdz(request_json, data_df)
+
         survey_metadata = Survey(id="INTERMAG")
         station_metadata = self._to_station_metadata(request_json["@info"])
         run_metadata = Run(id=run_id)
 
         ch_list = []
-        for key, df_list in ch.items():
-            df = pd.concat(df_list).astype(float)
+        for key in data_df.columns:
+            df = data_df[[key]].rename(columns={key: "data"}).astype(float)
             ch_metadata = Magnetic()
             ch_metadata.component = self._ch_map[key]
             ch_metadata.sample_rate = 1.0 / self.sampling_period
@@ -563,6 +616,8 @@ class Intermag:
         self.mth5_file_mode = "a"
         self.mth5_version = "0.2.0"
         self._ch_map = {"x": "hx", "y": "hy", "z": "hz"}
+        self.fallback_to_hdz = True
+        self.baseline_declination = None
 
         for key, value in kwargs.items():
             setattr(self, key, value)
@@ -680,7 +735,7 @@ class Intermag:
 
     def make_mth5_from_intermag(self, request_df):
         """
-        Download geomagnetic observatory data from USGS webservices into an
+        Download geomagnetic observatory data from INTERMAGNET webservices into an
         MTH5 using a request dataframe or csv file.
 
         :param request_df: DataFrame with columns
@@ -728,6 +783,8 @@ class Intermag:
                     start=row.start,
                     end=row.end,
                     sampling_period=row.sampling_period,
+                    fallback_to_hdz=self.fallback_to_hdz,
+                    baseline_declination=self.baseline_declination,
                     **{"_ch_map": {"x": "hx", "y": "hy", "z": "hz"}},
                 )
                 run = intermag_client.get_data(run_id=row.run)
