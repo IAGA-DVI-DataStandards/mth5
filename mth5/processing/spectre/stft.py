@@ -17,6 +17,8 @@ from mt_timeseries.spectre.spectrogram import Spectrogram
 
 from .prewhitening import apply_prewhitening, apply_recoloring
 
+AR_RESPONSE_CONVENTION = "A(z) = 1 - sum(phi_k z^-k); E(f) = A(f) X(f)"
+
 
 def run_ts_to_stft_scipy(
     decimation_obj: Union[AuroraDecimationLevel, FCDecimation],
@@ -40,7 +42,10 @@ def run_ts_to_stft_scipy(
     stft_obj : xarray.core.dataset.Dataset
         Time series of Fourier coefficients
     """
-    run_xrds = apply_prewhitening(decimation_obj.stft.prewhitening_type, run_xrds_orig)
+    run_xrds, prewhitening_results = apply_prewhitening(
+        decimation_obj.stft,
+        run_xrds_orig,
+    )
 
     stft_obj = xr.Dataset()
     for channel_id in run_xrds.data_vars:
@@ -72,9 +77,28 @@ def run_ts_to_stft_scipy(
             dims=["time", "frequency"],
             coords={"frequency": ff, "time": time_axis},
         )
+        if channel_id in prewhitening_results:
+            prewhitening_type = getattr(
+                decimation_obj.stft.prewhitening_type,
+                "value",
+                decimation_obj.stft.prewhitening_type,
+            )
+            xrd.attrs.update(
+                {
+                    "prewhitening": prewhitening_results[channel_id].as_dict(),
+                    "prewhitening_type": prewhitening_type,
+                    "prewhitening_fit_domain": "full run",
+                    "prewhitening_response_convention": AR_RESPONSE_CONVENTION,
+                }
+            )
         stft_obj.update({channel_id: xrd})
 
     if decimation_obj.stft.recoloring:
-        stft_obj = apply_recoloring(decimation_obj.stft.prewhitening_type, stft_obj)
+        stft_obj = apply_recoloring(
+            decimation_obj.stft,
+            stft_obj,
+            decimation_obj.decimation.sample_rate,
+            prewhitening_results,
+        )
 
     return Spectrogram(dataset=stft_obj)
