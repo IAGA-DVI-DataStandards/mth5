@@ -29,7 +29,6 @@ from mth5.groups import BaseGroup, FCChannelDataset
 from mth5.helpers import validate_name
 from mth5.utils.exceptions import MTH5Error
 
-
 # from mth5.groups import FCGroup
 
 
@@ -426,6 +425,7 @@ class FCDecimationGroup(BaseGroup):
         except AttributeError:
             self.logger.debug("Could not find 'units' in xarray")
         if isinstance(data_array, xr.DataArray):
+            self._set_prewhitening_metadata(ch_metadata, data_array)
             self.add_channel(
                 data_array.name,
                 fc_data=data_array.to_numpy(),
@@ -434,6 +434,7 @@ class FCDecimationGroup(BaseGroup):
         else:
             for ch in data_array.data_vars.keys():
                 ch_metadata.component = ch
+                self._set_prewhitening_metadata(ch_metadata, data_array[ch])
                 if ch in self.channel_summary.component.to_list():
                     self.remove_channel(ch)
                 # time index should be the first index
@@ -452,6 +453,26 @@ class FCDecimationGroup(BaseGroup):
                         dtype=data_array[ch].dtype,
                     )
         return
+
+    @staticmethod
+    def _set_prewhitening_metadata(
+        channel_metadata: fc.FCChannel,
+        data_array: xr.DataArray,
+    ) -> None:
+        """Copy fitted prewhitening metadata from a Fourier data array."""
+        result = data_array.attrs.get("prewhitening")
+        if result is None:
+            return
+
+        channel_metadata.prewhitening_type = data_array.attrs["prewhitening_type"]
+        channel_metadata.prewhitening_fit_domain = data_array.attrs[
+            "prewhitening_fit_domain"
+        ]
+        channel_metadata.prewhitening_response_convention = data_array.attrs[
+            "prewhitening_response_convention"
+        ]
+        channel_metadata.prewhitening_ar_coefficients = result["ar_coefficients"]
+        channel_metadata.prewhitening_ma_coefficients = result["ma_coefficients"]
 
     def to_xarray(self, channels: Optional[list[str]] = None) -> xr.Dataset:
         """
@@ -1162,10 +1183,10 @@ class FCGroup(BaseGroup):
             for fc_decimation_id in pre_existing_fc_decimation_ids_to_check:
                 fc_dec_group = self.get_decimation_level(fc_decimation_id)
                 fc_decimation = fc_dec_group.metadata
-                levels_present[
-                    i
-                ] = aurora_decimation_level.is_consistent_with_archived_fc_parameters(
-                    fc_decimation=fc_decimation, remote=remote
+                levels_present[i] = (
+                    aurora_decimation_level.is_consistent_with_archived_fc_parameters(
+                        fc_decimation=fc_decimation, remote=remote
+                    )
                 )
                 if levels_present[i]:
                     pre_existing_fc_decimation_ids_to_check.remove(
