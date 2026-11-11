@@ -32,7 +32,7 @@ dependencies = [
     "pyyaml",
     "scipy",
     "statsmodels",
-    "mt_metadata @ git+https://github.com/IAGA-DVI-DataStandards/mt-metadata.git@feature/issue-351-ar-prewhitening-metadata",
+    "mt_metadata>=1.0.13",
     "mt_timeseries>=0.0.2",
     "mt-io>=0.0.3",
 ]
