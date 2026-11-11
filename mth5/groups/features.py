@@ -23,7 +23,6 @@ from mth5.groups import BaseGroup, FeatureChannelDataset, RunGroup
 from mth5.helpers import validate_name
 from mth5.utils.exceptions import MTH5Error
 
-
 # =============================================================================
 """feature -> FeatureMasterGroup -> FeatureGroup -> DecimationLevelGroup -> ChannelGroup -> FeatureChannelDataset"""
 
@@ -1040,6 +1039,7 @@ class FeatureDecimationGroup(BaseGroup):
         except AttributeError:
             self.logger.debug("Could not find 'units' in xarray")
         if isinstance(data_array, xr.DataArray):
+            self._set_prewhitening_metadata(ch_metadata, data_array)
             self.add_channel(
                 data_array.name,
                 fc_data=data_array.to_numpy(),
@@ -1048,6 +1048,7 @@ class FeatureDecimationGroup(BaseGroup):
         else:
             for ch in data_array.data_vars.keys():
                 ch_metadata.name = ch
+                self._set_prewhitening_metadata(ch_metadata, data_array[ch])
                 if ch in self.channel_summary.name.to_list():
                     self.remove_channel(ch)
                 # time index should be the first index
@@ -1066,6 +1067,26 @@ class FeatureDecimationGroup(BaseGroup):
                         dtype=data_array[ch].dtype,
                     )
         return
+
+    @staticmethod
+    def _set_prewhitening_metadata(
+        channel_metadata: FeatureDecimationChannel,
+        data_array: xr.DataArray,
+    ) -> None:
+        """Copy fitted prewhitening metadata from a Fourier data array."""
+        result = data_array.attrs.get("prewhitening")
+        if result is None:
+            return
+
+        channel_metadata.prewhitening_type = data_array.attrs["prewhitening_type"]
+        channel_metadata.prewhitening_fit_domain = data_array.attrs[
+            "prewhitening_fit_domain"
+        ]
+        channel_metadata.prewhitening_response_convention = data_array.attrs[
+            "prewhitening_response_convention"
+        ]
+        channel_metadata.prewhitening_ar_coefficients = result["ar_coefficients"]
+        channel_metadata.prewhitening_ma_coefficients = result["ma_coefficients"]
 
     def to_xarray(self, channels: Optional[list] = None) -> xr.Dataset:
         """

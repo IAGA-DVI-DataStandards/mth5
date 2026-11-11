@@ -19,7 +19,6 @@ from mt_metadata.transfer_functions.core import TF
 from mth5.mth5 import MTH5
 from mth5.utils.exceptions import MTH5Error
 
-
 # =============================================================================
 # Test Configuration
 # =============================================================================
@@ -215,6 +214,11 @@ class TestStationMetadata:
                     "Jade Crosbie, Paul Bedrosian and Anna Kelbert",
                 ),
                 ("provenance.creator.email", "pbedrosian@usgs.gov"),
+                ("provenance.creator.organization", "U.S. Geological Survey"),
+                (
+                    "provenance.creator.url",
+                    "https://www.usgs.gov/natural-hazards/geomagnetism",
+                ),
                 ("provenance.software.author", ""),
                 (
                     "provenance.software.name",
@@ -223,6 +227,14 @@ class TestStationMetadata:
                 ("provenance.software.version", ""),
                 ("provenance.submitter.author", "Anna Kelbert"),
                 ("provenance.submitter.email", "akelbert@usgs.gov"),
+                (
+                    "provenance.submitter.organization",
+                    "U.S. Geological Survey, Geomagnetism Program",
+                ),
+                (
+                    "provenance.submitter.url",
+                    "https://www.usgs.gov/natural-hazards/geomagnetism",
+                ),
                 ("run_list", ["NMX20a", "NMX20b"]),
                 ("time_period.end", "2020-10-07T20:28:00+00:00"),
                 ("time_period.start", "2020-09-20T19:03:06+00:00"),
